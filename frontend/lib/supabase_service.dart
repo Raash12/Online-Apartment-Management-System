@@ -4,17 +4,14 @@ import 'config.dart';
 class SupabaseService {
   static Future<void> init() async {
     await Supabase.initialize(
-      url: Config.supabaseUrl,
-      anonKey: Config.supabaseAnonKey,
+      url: AppConfig.supabaseUrl,
+      anonKey: AppConfig.supabaseAnonKey,
     );
   }
 
   static SupabaseClient get client => Supabase.instance.client;
 
-  static Future<AuthResponse> signIn(String email, String password) async {
-    return await client.auth.signInWithPassword(
-      email: email.trim(),
-      password: password,
-    );
+  static Future<AuthResponse> signIn(String email, String password) {
+    return client.auth.signInWithPassword(email: email, password: password);
   }
 }
