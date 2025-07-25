@@ -15,6 +15,7 @@ class AddApartmentPage extends StatefulWidget {
 
 class _AddApartmentPageState extends State<AddApartmentPage> {
   final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _rentController = TextEditingController();
@@ -23,19 +24,24 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
   final TextEditingController _bathroomController = TextEditingController();
   final TextEditingController _sizeController = TextEditingController();
 
-  File? _selectedImage;
+  File? _image;
   final ImagePicker picker = ImagePicker();
   final String imgbbApiKey = '409164d54cc9cb69bc6e0c8910d9f487';
-
-  bool _isLoading = false;
 
   Future<void> _pickImage() async {
     try {
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
-        setState(() {
-          _selectedImage = File(pickedFile.path);
-        });
+        final file = File(pickedFile.path);
+        if (await file.exists()) {
+          setState(() {
+            _image = file;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selected file does not exist.')),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,66 +61,54 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
         final responseData = json.decode(response.body);
         return responseData["data"]["url"];
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed: ${response.statusCode}')),
-        );
         return null;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image upload error: $e')),
-      );
       return null;
     }
   }
 
-  Future<void> _uploadApartment() async {
-    if (!_formKey.currentState!.validate() || _selectedImage == null) {
+  Future<void> _addApartmentToFirestore() async {
+    if (_formKey.currentState!.validate() && _image != null) {
+      try {
+        final imageUrl = await uploadImageToImgBB(_image!);
+        if (imageUrl == null) throw Exception("Failed to upload image to ImgBB");
+
+        await FirebaseFirestore.instance.collection('apartments').add({
+          'name': _nameController.text.trim(),
+          'location': _locationController.text.trim(),
+          'rent': double.parse(_rentController.text.trim()),
+          'description': _descriptionController.text.trim(),
+          'bedrooms': int.tryParse(_bedroomController.text.trim()) ?? 0,
+          'bathrooms': int.tryParse(_bathroomController.text.trim()) ?? 0,
+          'size': _sizeController.text.trim(),
+          'imageUrl': imageUrl,
+          'status': 'available',
+          'createdAt': Timestamp.now(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Apartment added successfully'), backgroundColor: Colors.green),
+        );
+
+        _formKey.currentState!.reset();
+        setState(() {
+          _image = null;
+        });
+
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding apartment: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and select an image')),
+        const SnackBar(
+          content: Text('Please complete all fields and select an image.'),
+          backgroundColor: Colors.deepPurple,
+        ),
       );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final imageUrl = await uploadImageToImgBB(_selectedImage!);
-      if (imageUrl == null) throw Exception('Failed to upload image');
-
-      await FirebaseFirestore.instance.collection('apartments').add({
-        'name': _nameController.text.trim(),
-        'location': _locationController.text.trim(),
-        'rent': double.parse(_rentController.text.trim()),
-        'description': _descriptionController.text.trim(),
-        'imageUrl': imageUrl,
-        'status': 'available',
-        'createdAt': FieldValue.serverTimestamp(),
-        'bedrooms': int.tryParse(_bedroomController.text.trim()) ?? 0,
-        'bathrooms': int.tryParse(_bathroomController.text.trim()) ?? 0,
-        'size': _sizeController.text.trim(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Apartment added successfully'), backgroundColor: Colors.green),
-      );
-
-      _formKey.currentState!.reset();
-      setState(() {
-        _selectedImage = null;
-      });
-
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -159,53 +153,55 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add Apartment'),
+        title: const Text('Add Apartment', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.deepPurple),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _selectedImage != null
-                      ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                      : const Center(
-                          child: Text('Tap to pick apartment image', style: TextStyle(color: Colors.deepPurple)),
-                        ),
+              _image == null
+                  ? const Text('No image selected', style: TextStyle(color: Colors.deepPurple))
+                  : Image.file(_image!, height: 150),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.image, color: Colors.white),
+                label: const Text('Select Image from Device', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 ),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 decoration: _inputDecoration('Apartment Name'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter apartment name' : null,
+                validator: (value) => value!.isEmpty ? 'Enter apartment name' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _locationController,
                 decoration: _inputDecoration('Location'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter location' : null,
+                validator: (value) => value!.isEmpty ? 'Enter location' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _rentController,
                 decoration: _inputDecoration('Rent Price (USD)'),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Enter rent price';
-                  final n = double.tryParse(value);
-                  if (n == null || n <= 0) return 'Enter valid rent price';
+                  final n = num.tryParse(value);
+                  if (n == null || n <= 0) return 'Enter a valid price';
                   return null;
                 },
               ),
@@ -231,20 +227,19 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
                 controller: _descriptionController,
                 decoration: _inputDecoration('Description'),
                 maxLines: 4,
-                validator: (value) => value == null || value.isEmpty ? 'Enter description' : null,
+                validator: (value) => value!.isEmpty ? 'Enter description' : null,
               ),
               const SizedBox(height: 24),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _uploadApartment,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('Add Apartment', style: TextStyle(color: Colors.white, fontSize: 16)),
-                    ),
+              ElevatedButton(
+                onPressed: _addApartmentToFirestore,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.deepPurple, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 30),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                child: const Text('Add Apartment', style: TextStyle(color: Colors.deepPurple)),
+              ),
             ],
           ),
         ),
