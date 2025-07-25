@@ -186,7 +186,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Navigator.pop(context);
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => AddApartment()),
+      MaterialPageRoute(builder: (_) => AddApartmentPage()),
     ).then((_) {
       if (_selectedIndex == 0) {
         setState(() {

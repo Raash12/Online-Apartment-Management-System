@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:frontend/UserPages/UserUploadDocument.dart';
+import 'package:frontend/admin_pages/add_apartment.dart';
+import 'package:frontend/admin_pages/admin_sidebar.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
 
@@ -24,7 +27,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
       ),
-      home: LoginScreen(),
+     home: AdminSidebar(
+        
+     )
+
     );
   }
 }
