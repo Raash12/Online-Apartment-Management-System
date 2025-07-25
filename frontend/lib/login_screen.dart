@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/User/Dashboard.dart';
-import 'supabase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:frontend/admin_pages/admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,6 +16,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _error;
 
+  @override
+  void initState() {
+    super.initState();
+    _initializeFirebase();
+  }
+
+  Future<void> _initializeFirebase() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
   void _login() async {
     setState(() {
       _loading = true;
@@ -21,27 +35,27 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await SupabaseService.signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-      if (response.user != null) {
-  print('✅ Logged in: ${response.user!.email}');
-  // Navigate to home
-  if (context.mounted) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const HomePage()),
-    );
-  }
-}
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
-      if (response.session != null) {
-        print("✅ Logged in: ${response.user!.email}");
-        // Navigate to another screen here if needed
+      User? user = userCredential.user;
+
+      if (user != null) {
+        print('✅ Logged in: ${user.email}');
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminDashboard()),
+          );
+        }
       } else {
         setState(() => _error = "Login failed. Check credentials.");
       }
+    } on FirebaseAuthException catch (e) {
+      setState(() => _error = e.message ?? "Authentication error");
     } catch (e) {
       setState(() => _error = "Error: ${e.toString()}");
     } finally {
@@ -78,8 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loading ? null : _login,
-              child:
-                  _loading ? CircularProgressIndicator() : Text("Login"),
+              child: _loading
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text("Login"),
             ),
           ],
         ),
