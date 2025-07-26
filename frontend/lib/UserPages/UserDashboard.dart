@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:frontend/UserPages/AvailableApartments.dart';
+import 'package:frontend/UserPages/MyRequestStatusPage.dart'; // <- Import your page
 import 'package:frontend/login_screen.dart';
 
 class UserDashboard extends StatelessWidget {
   const UserDashboard({super.key});
 
-  // Function to sign out the user
   void _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
@@ -44,36 +45,75 @@ class UserDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Placeholder for your user content
+            // Available Apartments Button
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: const [
-                    Text(
-                      'Available Apartments',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AvailableApartmentsPage()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.apartment, color: Colors.deepPurple),
+                      SizedBox(width: 12),
+                      Text(
+                        'Available Apartments',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'List apartments here...',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // More sections can be added here, like Maintenance Requests, Notices, etc.
+            // My Requests Button
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const UserIdentificationRequestsPage()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.assignment_turned_in, color: Colors.deepPurple),
+                      SizedBox(width: 12),
+                      Text(
+                        'My Requests',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

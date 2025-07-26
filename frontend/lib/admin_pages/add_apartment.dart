@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:frontend/admin_pages/admin_dashboard.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart';
 
 class AddApartmentPage extends StatefulWidget {
   const AddApartmentPage({super.key});
@@ -25,45 +25,35 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
   final TextEditingController _sizeController = TextEditingController();
 
   File? _image;
-  final ImagePicker picker = ImagePicker();
-  final String imgbbApiKey = '409164d54cc9cb69bc6e0c8910d9f487';
+  final picker = ImagePicker();
 
   Future<void> _pickImage() async {
-    try {
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        final file = File(pickedFile.path);
-        if (await file.exists()) {
-          setState(() {
-            _image = file;
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Selected file does not exist.')),
-          );
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image selection failed: $e')),
-      );
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
     }
   }
 
   Future<String?> uploadImageToImgBB(File imageFile) async {
+    const apiKey = '409164d54cc9cb69bc6e0c8910d9f487'; // Replace with your ImgBB API key
+    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
+    final base64Image = base64Encode(await imageFile.readAsBytes());
+
     try {
-      final base64Image = base64Encode(await imageFile.readAsBytes());
-      final response = await http.post(
-        Uri.parse("https://api.imgbb.com/1/upload?key=$imgbbApiKey"),
-        body: {"image": base64Image},
-      );
+      final response = await http.post(url, body: {
+        'image': base64Image,
+      });
+
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        return responseData["data"]["url"];
+        final data = jsonDecode(response.body);
+        return data['data']['url'];
       } else {
         return null;
       }
     } catch (e) {
+      print('Image upload error: $e');
       return null;
     }
   }
@@ -72,7 +62,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
     if (_formKey.currentState!.validate() && _image != null) {
       try {
         final imageUrl = await uploadImageToImgBB(_image!);
-        if (imageUrl == null) throw Exception("Failed to upload image to ImgBB");
+        if (imageUrl == null) throw Exception("Image upload failed");
 
         await FirebaseFirestore.instance.collection('apartments').add({
           'name': _nameController.text.trim(),
@@ -91,157 +81,81 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
           const SnackBar(content: Text('Apartment added successfully'), backgroundColor: Colors.green),
         );
 
-        _formKey.currentState!.reset();
-        setState(() {
-          _image = null;
-        });
-
-        Navigator.pop(context);
+        // Navigate to Admin Dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) =>  AdminDashboard()),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding apartment: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please complete all fields and select an image.'),
+          content: Text('Please fill all fields and pick an image.'),
           backgroundColor: Colors.deepPurple,
         ),
       );
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.deepPurple),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.deepPurple),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _locationController.dispose();
-    _rentController.dispose();
-    _descriptionController.dispose();
-    _bedroomController.dispose();
-    _bathroomController.dispose();
-    _sizeController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add Apartment', style: TextStyle(color: Colors.white)),
+        title: const Text('Add Apartment'),
         backgroundColor: Colors.deepPurple,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              _image == null
-                  ? const Text('No image selected', style: TextStyle(color: Colors.deepPurple))
-                  : Image.file(_image!, height: 150),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.image, color: Colors.white),
-                label: const Text('Select Image from Device', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                ),
+              GestureDetector(
+                onTap: _pickImage,
+                child: _image == null
+                    ? Container(
+                        height: 150,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.camera_alt, size: 50),
+                      )
+                    : Image.file(_image!, height: 150),
               ),
+              const SizedBox(height: 16),
+              _buildTextField(_nameController, 'Name'),
+              _buildTextField(_locationController, 'Location'),
+              _buildTextField(_rentController, 'Rent', isNumber: true),
+              _buildTextField(_descriptionController, 'Description'),
+              _buildTextField(_bedroomController, 'Bedrooms', isNumber: true),
+              _buildTextField(_bathroomController, 'Bathrooms', isNumber: true),
+              _buildTextField(_sizeController, 'Size'),
               const SizedBox(height: 20),
-              TextFormField(
-                controller: _nameController,
-                decoration: _inputDecoration('Apartment Name'),
-                validator: (value) => value!.isEmpty ? 'Enter apartment name' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _locationController,
-                decoration: _inputDecoration('Location'),
-                validator: (value) => value!.isEmpty ? 'Enter location' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _rentController,
-                decoration: _inputDecoration('Rent Price (USD)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Enter rent price';
-                  final n = num.tryParse(value);
-                  if (n == null || n <= 0) return 'Enter a valid price';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _bedroomController,
-                decoration: _inputDecoration('Bedrooms'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _bathroomController,
-                decoration: _inputDecoration('Bathrooms'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _sizeController,
-                decoration: _inputDecoration('Size (e.g. 1200 sqft)'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: _inputDecoration('Description'),
-                maxLines: 4,
-                validator: (value) => value!.isEmpty ? 'Enter description' : null,
-              ),
-              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _addApartmentToFirestore,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.deepPurple, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 30),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                child: const Text('Add Apartment', style: TextStyle(color: Colors.deepPurple)),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                child: const Text('Add Apartment'),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String labelText, {bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        validator: (value) => value == null || value.trim().isEmpty ? 'Enter $labelText' : null,
+        decoration: InputDecoration(
+          labelText: labelText,
+          border: const OutlineInputBorder(),
         ),
       ),
     );
