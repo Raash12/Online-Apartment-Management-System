@@ -73,29 +73,43 @@ class _RentNowPageState extends State<RentNowPage> {
 
                       setState(() => isSubmitting = true);
 
-                      final uid = FirebaseAuth.instance.currentUser!.uid;
+                      // Check apartment status before proceeding
+                      DocumentSnapshot apartmentDoc = await FirebaseFirestore.instance
+                          .collection('apartments')
+                          .doc(widget.apartmentId)
+                          .get();
 
-                      await FirebaseFirestore.instance.collection('rent_now').add({
-                        'userId': uid,
-                        'apartmentId': widget.apartmentId,
-                        'apartmentName': widget.apartmentName,
-                        'startDate': startDate,
-                        'endDate': endDate,
-                        'status': 'active', // Or 'pending' if you want admin approval
-                        'createdAt': FieldValue.serverTimestamp(),
-                      });
+                      if (apartmentDoc.exists && apartmentDoc['status'] == 'available') {
+                        final uid = FirebaseAuth.instance.currentUser!.uid;
 
-                      // Optionally update apartment doc to make it hidden
-                 await FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId).update({
-              'status': 'rented',
-      'rentedUntil': endDate,
-});
+                        await FirebaseFirestore.instance.collection('rent_now').add({
+                          'userId': uid,
+                          'apartmentId': widget.apartmentId,
+                          'apartmentName': widget.apartmentName,
+                          'startDate': startDate,
+                          'endDate': endDate,
+                          'status': 'active', // Or 'pending' if you want admin approval
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
 
+                        // Update the apartment status to 'rented'
+                        await FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId).update({
+                          'status': 'rented',
+                          'rentedUntil': endDate,
+                        });
 
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rented successfully")));
-                        Navigator.pop(context);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rented successfully")));
+                          Navigator.pop(context);
+                        }
+                      } else {
+                        // Show a message if the apartment is no longer available
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Apartment is no longer available.")));
+                        }
                       }
+
+                      setState(() => isSubmitting = false);
                     },
                     child: const Text("Confirm Rent"),
                   ),
