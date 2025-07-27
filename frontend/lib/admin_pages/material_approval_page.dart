@@ -17,10 +17,17 @@ class MaterialApprovalPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('Material Requests'),
         backgroundColor: Colors.deepPurple,
+
         elevation: 4,
         shadowColor: Colors.deepPurpleAccent,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -60,7 +67,10 @@ class MaterialApprovalPage extends StatelessWidget {
               }
 
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -69,11 +79,14 @@ class MaterialApprovalPage extends StatelessWidget {
                       color: Colors.black12,
                       blurRadius: 6,
                       offset: Offset(0, 3),
-                    )
+                    ),
                   ],
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   title: Text(
                     name,
                     style: const TextStyle(
@@ -88,7 +101,13 @@ class MaterialApprovalPage extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(description, style: const TextStyle(fontSize: 14)),
                       const SizedBox(height: 8),
-                      Text(date, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        date,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         'Status: ${status[0].toUpperCase()}${status.substring(1)}',
@@ -100,12 +119,17 @@ class MaterialApprovalPage extends StatelessWidget {
                       ? Column(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.check, color: Colors.green),
-                              onPressed: () => _updateStatus(doc.id, 'approved'),
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              ),
+                              onPressed: () =>
+                                  _updateStatus(doc.id, 'approved'),
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, color: Colors.red),
-                              onPressed: () => _updateStatus(doc.id, 'rejected'),
+                              onPressed: () =>
+                                  _updateStatus(doc.id, 'rejected'),
                             ),
                           ],
                         )

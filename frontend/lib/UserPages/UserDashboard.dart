@@ -1,120 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:frontend/UserPages/AvailableApartments.dart';
-import 'package:frontend/UserPages/MyRequestStatusPage.dart'; // <- Import your page
-import 'package:frontend/login_screen.dart';
+import 'package:frontend/UserPages/MyRequestStatusPage.dart';
+import 'material_request_page.dart';
+import 'view_notices_page.dart';
+
 
 class UserDashboard extends StatelessWidget {
   const UserDashboard({super.key});
 
-  void _signOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => LoginScreen()),
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userEmail = user?.email ?? 'User';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
+      appBar: AppBar(
+        title: const Text(
+          'User Dashboard',
+        ),
+        centerTitle: true,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        backgroundColor: Colors.deepPurple,
+        elevation: 4,
+        shadowColor: Colors.deepPurpleAccent,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome, $userEmail',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Available Apartments
+              _dashboardCard(
+                context,
+                icon: Icons.apartment,
+                label: 'Available Apartments',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) =>  AvailableApartmentsPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // My Requests
+              _dashboardCard(
+                context,
+                icon: Icons.assignment_turned_in,
+                label: 'My Requests',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) =>  UserIdentificationRequestsPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Submit Material Request
+              _dashboardCard(
+                context,
+                icon: Icons.send,
+                label: 'Submit Material Request',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MaterialRequestPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // View Notices
+              _dashboardCard(
+                context,
+                icon: Icons.notifications,
+                label: 'View Notices',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ViewNoticesPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final userEmail = FirebaseAuth.instance.currentUser?.email ?? 'User';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Dashboard'),
-        backgroundColor: Colors.deepPurple,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _signOut(context),
-            tooltip: 'Logout',
+  Widget _dashboardCard(BuildContext context,
+      {required IconData icon, required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 5,
+        shadowColor: Colors.deepPurple.withOpacity(0.2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome, $userEmail',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Available Apartments Button
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AvailableApartmentsPage()),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.apartment, color: Colors.deepPurple),
-                      SizedBox(width: 12),
-                      Text(
-                        'Available Apartments',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: Row(
+            children: [
+              Icon(icon, size: 32, color: Colors.deepPurple),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // My Requests Button
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const UserIdentificationRequestsPage()),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.assignment_turned_in, color: Colors.deepPurple),
-                      SizedBox(width: 12),
-                      Text(
-                        'My Requests',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );
