@@ -13,9 +13,13 @@ class AdminIdentificationApprovalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = Colors.deepPurple;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin Approvals"),
+        title: const Text("Identification Approvals"),
+        backgroundColor: themeColor,
+        foregroundColor: Colors.white, 
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -23,7 +27,9 @@ class AdminIdentificationApprovalPage extends StatelessWidget {
             .orderBy('submittedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           return ListView(
             padding: const EdgeInsets.all(12),
@@ -31,34 +37,72 @@ class AdminIdentificationApprovalPage extends StatelessWidget {
               final data = doc.data() as Map<String, dynamic>;
               final docId = doc.id;
 
-              return Card(
-                child: ListTile(
-                  title: Text("Apartment: ${data['apartmentName']}"),
-                  subtitle: Column(
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [themeColor.shade700, themeColor.shade400],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Responsible: ${data['responsibleName']}"),
-                      Text("ID Number: ${data['responsibleIdNumber']}"),
-                      Text("Phone: ${data['responsiblePhone']}"),
-                      Text("Workplace: ${data['responsibleWorkPlace']}"),
-                      Text("Status: ${data['status']}"),
-                      const SizedBox(height: 6),
+                      Text(
+                        "🏢 Apartment: ${data['apartmentName']}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text("👤 Responsible: ${data['responsibleName']}",
+                          style: const TextStyle(color: Colors.white)),
+                      Text("🆔 ID Number: ${data['responsibleIdNumber']}",
+                          style: const TextStyle(color: Colors.white)),
+                      Text("📞 Phone: ${data['responsiblePhone']}",
+                          style: const TextStyle(color: Colors.white)),
+                      Text("🏢 Workplace: ${data['responsibleWorkPlace']}",
+                          style: const TextStyle(color: Colors.white)),
+                      Text("📌 Status: ${data['status']}",
+                          style: const TextStyle(
+                              color: Colors.white70, fontStyle: FontStyle.italic)),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
-                          ElevatedButton(
+                          ElevatedButton.icon(
                             onPressed: () => updateStatus(docId, "Approved"),
-                            child: const Text("Approve"),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () => updateStatus(docId, "Rejected"),
+                            icon: const Icon(Icons.check),
+                            label: const Text("Approve"),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: Colors.green[600],
+                              foregroundColor: Colors.white,
                             ),
-                            child: const Text("Reject"),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: () => updateStatus(docId, "Rejected"),
+                            icon: const Icon(Icons.close),
+                            label: const Text("Reject"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[600],
+                              foregroundColor: Colors.white,
+                            ),
                           ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:frontend/admin_pages/AdminApprovePage.dart';
 import 'package:frontend/admin_pages/add_apartment.dart';
 import 'package:frontend/admin_pages/admin_apartment_view.dart';
 import 'package:frontend/admin_pages/material_approval_page.dart';
 import 'package:frontend/admin_pages/post_notice_page.dart';
-
 import 'package:frontend/login_screen.dart';
+import 'package:frontend/reports/rental_report_widget.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -27,17 +26,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
   ];
 
   final List<String> titles = [
-  'Luxury Retreat',
-  'Modern Haven',
-  'Eco Smart Living',
-  'Family Comfort Space',
+    'Luxury Apartment',
+    'Modern Apartment',
+    'Eco Apartment',
+    'Family Apartment',
   ];
 
   final List<String> descriptions = [
-  'Experience unmatched comfort and elegance.',
-  'A modern sanctuary with premium finishes.',
-  'Eco-conscious living with smart design.',
-  'Spacious, safe, and perfect for your family.',
+    'Elegant and comfortable apartment.',
+    'Stylish apartment with modern design.',
+    'Smart eco-friendly apartment.',
+    'Spacious apartment for families.',
   ];
 
   late final PageController _pageController;
@@ -116,98 +115,112 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-Widget _buildStatCard(String title, String count, IconData icon, Color color) {
-  // Define different gradient backgrounds for each card type
-  final gradientColors = _getCardGradient(color);
-  
-  return Card(
-    elevation: 3,
-    margin: const EdgeInsets.all(6),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(color: color.withOpacity(0.2), width: 0.5),
-    ),
-    child: Container(
-      height: 90, // Keep compact height
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors,
-        ),
+  Widget _buildStatCard(
+    String title,
+    String count,
+    IconData icon,
+    Color color,
+  ) {
+    final gradientColors = _getCardGradient(color);
+
+    return Card(
+      elevation: 3,
+      margin: const EdgeInsets.all(6),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withOpacity(0.2), width: 0.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+      child: Container(
+        height: 80, // Reduced height
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0), // Reduced padding
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: Colors.white,
+                ), // Smaller icon
               ),
-              child: Icon(icon, size: 30, color: Colors.white),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              count,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+              const SizedBox(height: 4),
+              Text(
+                count,
+                style: const TextStyle(
+                  fontSize: 14, // Smaller font
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.white.withOpacity(0.9),
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 2),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 9, // Smaller font
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
-List<Color> _getCardGradient(Color baseColor) {
-  // Return different gradient combinations based on base color
-  if (baseColor == Colors.green) {
-    return [Color(0xFF4CAF50), Color(0xFF8BC34A)]; // Green gradient
-  } else if (baseColor == Colors.blue) {
-    return [Color(0xFF2196F3), Color(0xFF64B5F6)]; // Blue gradient
-  } else if (baseColor == Colors.orange) {
-    return [Color(0xFFFF9800), Color(0xFFFFC107)]; // Orange gradient
-  } else if (baseColor == Colors.purple) {
-    return [Color(0xFF9C27B0), Color(0xFFBA68C8)]; // Purple gradient
-  } else {
-    return [baseColor.withOpacity(0.8), baseColor.withOpacity(0.4)]; // Default
+    );
   }
-}
 
-Widget _buildStatsGrid(List<Widget> cards) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final availableWidth = constraints.maxWidth - 24;
-      final crossAxisCount = (availableWidth / 150).floor().clamp(1, 3);
-      return GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        children: cards,
-      );
-    },
-  );
-}
+  List<Color> _getCardGradient(Color baseColor) {
+    // Unified color scheme
+    if (baseColor == Colors.green) {
+      return [const Color(0xFF4CAF50), const Color(0xFF8BC34A)];
+    } else if (baseColor == Colors.blue) {
+      return [const Color(0xFF2196F3), const Color(0xFF64B5F6)];
+    } else if (baseColor == Colors.orange) {
+      return [const Color(0xFFFF9800), const Color(0xFFFFC107)];
+    } else if (baseColor == Colors.purple) {
+      return [const Color(0xFF9C27B0), const Color(0xFFBA68C8)];
+    } else if (baseColor == Colors.indigo) {
+      return [const Color(0xFF3F51B5), const Color(0xFF7986CB)]; // Indigo
+    } else if (baseColor == Colors.teal) {
+      return [const Color(0xFF009688), const Color(0xFF4DB6AC)]; // Teal
+    } else if (baseColor == Colors.amber) {
+      return [const Color(0xFFFFC107), const Color(0xFFFFD54F)]; // Amber
+    } else if (baseColor == Colors.lightGreen) {
+      return [const Color(0xFF8BC34A), const Color(0xFFAED581)]; // Light Green
+    } else {
+      return [baseColor.withOpacity(0.8), baseColor.withOpacity(0.4)];
+    }
+  }
+
+  Widget _buildStatsGrid(List<Widget> cards) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 3, // Fixed 3 columns
+      childAspectRatio: 0.75,
+      crossAxisSpacing: 8, // Reduced spacing
+      mainAxisSpacing: 8, // Reduced spacing
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 8,
+      ), // Reduced padding
+      children: cards,
+    );
+  }
+
   Widget _buildIdentificationStats() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,31 +277,36 @@ Widget _buildStatsGrid(List<Widget> cards) {
         ),
         _buildStatsGrid([
           _buildStatCard(
-            'Apartments', 
+            'Apartments',
             apartmentCount.toString(),
-            Icons.apartment, 
-            Colors.indigo
+            Icons.apartment,
+            Colors.indigo,
           ),
           _buildStatCard(
-            'Rented', 
+            'Rented',
             rentedCount.toString(),
-            Icons.car_rental, 
-            Colors.teal
+            Icons.car_rental,
+            Colors.teal,
           ),
           _buildStatCard(
-            'Pending Material', 
+            'Pending Material',
             materialPendingCount.toString(),
-            Icons.pending_actions, 
-            Colors.amber
+            Icons.pending_actions,
+            Colors.amber,
           ),
           _buildStatCard(
-            'Approved Material', 
+            'Approved Material',
             materialApprovedCount.toString(),
-            Icons.check_circle_outline, 
-            Colors.lightGreen
+            Icons.check_circle_outline,
+            Colors.lightGreen,
           ),
-          const SizedBox.shrink(),
-          const SizedBox.shrink(),
+          _buildStatCard(
+            'Total Requests',
+            requestCount.toString(),
+            Icons.list_alt,
+            Colors.blue,
+          ),
+          const SizedBox.shrink(), // Placeholder for empty space
         ]),
       ],
     );
@@ -297,35 +315,144 @@ Widget _buildStatsGrid(List<Widget> cards) {
   Widget _buildSidebar() {
     if (_isCollapsed) return const SizedBox.shrink();
     return Container(
-      width: 200,
-      color: Colors.white,
+      width: 220,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Container(
-            height: 100,
-            color: Colors.deepPurple,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Admin Panel',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.deepPurple,
+              borderRadius: const BorderRadius.only(
+                bottomRight: Radius.circular(15),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                'Admin Panel',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 2,
+                      offset: const Offset(1, 1),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          _buildSidebarItem(Icons.add_circle_outline, 'Add Apartment', const AddApartmentPage()),
-          _buildSidebarItem(Icons.houseboat_rounded, 'Apartments list', const AdminApartmentViewPage()),
-          _buildSidebarItem(Icons.perm_identity, 'Identification', const AdminIdentificationApprovalPage()),
-          _buildSidebarItem(Icons.notifications_active, 'Send Notice', const PostNoticePage()),
-          const Spacer(),
-          _buildSidebarItem(Icons.logout, 'Logout', LoginScreen(), isLogout: true),
+          const SizedBox(height: 15),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              children: [
+                _buildSidebarItem(
+                  Icons.add_circle_outlined,
+                  'Add Apartment',
+                  const AddApartmentPage(),
+                ),
+                const Divider(
+                  height: 20,
+                  thickness: 0.5,
+                  indent: 20,
+                  endIndent: 20,
+                ),
+                _buildSidebarItem(
+                  Icons.home_work_outlined,
+                  'Apartments list',
+                  const AdminApartmentViewPage(),
+                ),
+                const SizedBox(height: 10),
+                _buildSidebarItem(
+                  Icons.perm_identity,
+                  'Identification',
+                  const AdminIdentificationApprovalPage(),
+                ),
+                const SizedBox(height: 10),
+                _buildSidebarItem(
+                  Icons.notifications_active,
+                  'Send Notice',
+                  const PostNoticePage(),
+                ),
+                const Divider(
+                  height: 20,
+                  thickness: 0.5,
+                  indent: 20,
+                  endIndent: 20,
+                ),
+                _buildSidebarItem(
+                  Icons.analytics_outlined,
+                  'Report',
+                  const RentalReportWidget(),
+                ),
+                const Spacer(),
+                const Divider(height: 20, thickness: 0.5),
+                _buildSidebarItem(
+                  Icons.logout,
+                  'Logout',
+                  LoginScreen(),
+                  isLogout: true,
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem(
+    IconData icon,
+    String label,
+    Widget targetPage, {
+    bool isLogout = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.deepPurple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.deepPurple, size: 22),
+        ),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.deepPurple),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        minLeadingWidth: 10,
+        horizontalTitleGap: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        onTap: () {
+          if (isLogout) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => targetPage),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => targetPage),
+            );
+          }
+        },
       ),
     );
   }
@@ -342,48 +469,29 @@ Widget _buildStatsGrid(List<Widget> cards) {
     );
   }
 
-Widget _buildToggleButton() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add horizontal padding
-    child: Row(
-      children: [
-        IconButton(
-          icon: Icon(_isCollapsed ? Icons.menu : Icons.close, color: Colors.deepPurple),
-          onPressed: () {
-            setState(() {
-              _isCollapsed = !_isCollapsed;
-            });
-          },
-        ),
-        const Spacer(),
-        Padding(
-          padding: const EdgeInsets.only(right: 8.0), // Right padding for feedback icon
-          child: _buildRequestsButton(),
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildSidebarItem(IconData icon, String label, Widget targetPage, {bool isLogout = false}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.deepPurple, size: 20),
-      title: Text(label, style: const TextStyle(fontSize: 14)),
-      onTap: () {
-        if (isLogout) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => targetPage),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => targetPage),
-          );
-        }
-      },
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+  Widget _buildToggleButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(
+              _isCollapsed ? Icons.menu : Icons.close,
+              color: Colors.deepPurple,
+            ),
+            onPressed: () {
+              setState(() {
+                _isCollapsed = !_isCollapsed;
+              });
+            },
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: _buildRequestsButton(),
+          ),
+        ],
+      ),
     );
   }
 
