@@ -32,6 +32,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - image/apartment1.jpg
-    - image/apartment2.jpg
-    - image/apartment3.jpg
+    - image/
+    

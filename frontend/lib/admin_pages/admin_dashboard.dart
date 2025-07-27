@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:frontend/admin_pages/AdminApprovePage.dart';
 import 'package:frontend/admin_pages/add_apartment.dart';
 import 'package:frontend/admin_pages/admin_apartment_view.dart';
+import 'package:frontend/admin_pages/material_approval_page.dart';
 import 'package:frontend/admin_pages/post_notice_page.dart';
+
 import 'package:frontend/login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -17,24 +20,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
   bool _isCollapsed = true;
 
   final List<String> imagePaths = [
-    'image/apartment1.jpg',
-    'image/apartment2.jpg',
-    'image/apartment3.jpg',
-    'image/apartment4.jpg',
+    'image/img1.jpg',
+    'image/img2.jpg',
+    'image/img3.jpg',
+    'image/img4.jpg',
   ];
 
   final List<String> titles = [
-    'Luxury Ride',
-    'Performance Beast',
-    'Eco-Friendly Drive',
-    'Spacious Family Home'
+  'Luxury Retreat',
+  'Modern Haven',
+  'Eco Smart Living',
+  'Family Comfort Space',
   ];
 
   final List<String> descriptions = [
-    'Experience unmatched comfort and class.',
-    'Power and speed blended with style.',
-    'Go green without compromising performance.',
-    'Perfect for modern family living.'
+  'Experience unmatched comfort and elegance.',
+  'A modern sanctuary with premium finishes.',
+  'Eco-conscious living with smart design.',
+  'Spacious, safe, and perfect for your family.',
   ];
 
   late final PageController _pageController;
@@ -113,81 +116,98 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color, {Color? textColor}) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth / 3 - 24;
-        return SizedBox(
-          width: cardWidth,
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: color.withOpacity(0.2)),
+Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+  // Define different gradient backgrounds for each card type
+  final gradientColors = _getCardGradient(color);
+  
+  return Card(
+    elevation: 3,
+    margin: const EdgeInsets.all(6),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: BorderSide(color: color.withOpacity(0.2), width: 0.5),
+    ),
+    child: Container(
+      height: 90, // Keep compact height
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 24, color: Colors.white),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, size: 28, color: color),
-                  ),
-                  const SizedBox(height: 12),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      count,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: textColor ?? color,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 6),
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
-  Widget _buildStatsGrid(List<Widget> cards) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          childAspectRatio: 0.9,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          children: cards,
-        );
-      },
-    );
+List<Color> _getCardGradient(Color baseColor) {
+  // Return different gradient combinations based on base color
+  if (baseColor == Colors.green) {
+    return [Color(0xFF4CAF50), Color(0xFF8BC34A)]; // Green gradient
+  } else if (baseColor == Colors.blue) {
+    return [Color(0xFF2196F3), Color(0xFF64B5F6)]; // Blue gradient
+  } else if (baseColor == Colors.orange) {
+    return [Color(0xFFFF9800), Color(0xFFFFC107)]; // Orange gradient
+  } else if (baseColor == Colors.purple) {
+    return [Color(0xFF9C27B0), Color(0xFFBA68C8)]; // Purple gradient
+  } else {
+    return [baseColor.withOpacity(0.8), baseColor.withOpacity(0.4)]; // Default
   }
+}
 
+Widget _buildStatsGrid(List<Widget> cards) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final availableWidth = constraints.maxWidth - 24;
+      final crossAxisCount = (availableWidth / 150).floor().clamp(1, 3);
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        children: cards,
+      );
+    },
+  );
+}
   Widget _buildIdentificationStats() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +321,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           _buildSidebarItem(Icons.add_circle_outline, 'Add Apartment', const AddApartmentPage()),
           _buildSidebarItem(Icons.houseboat_rounded, 'Apartments list', const AdminApartmentViewPage()),
-          _buildSidebarItem(Icons.perm_identity, 'Identication', const AdminIdentificationApprovalPage()),
+          _buildSidebarItem(Icons.perm_identity, 'Identification', const AdminIdentificationApprovalPage()),
           _buildSidebarItem(Icons.notifications_active, 'Send Notice', const PostNoticePage()),
           const Spacer(),
           _buildSidebarItem(Icons.logout, 'Logout', LoginScreen(), isLogout: true),
@@ -310,44 +330,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildAppBarActions() {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: Colors.deepPurple),
-      onSelected: (value) {
-        switch (value) {
-          case 'refresh':
-            _fetchCounts();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Data refreshed')),
-            );
-            break;
-          case 'settings':
-            // Add your settings navigation here
-            break;
-          case 'help':
-            // Add your help navigation here
-            break;
-        }
+  Widget _buildRequestsButton() {
+    return IconButton(
+      icon: const Icon(Icons.request_page, color: Colors.deepPurple),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MaterialApprovalPage()),
+        );
       },
-      itemBuilder: (BuildContext context) => [
-        const PopupMenuItem<String>(
-          value: 'refresh',
-          child: Text('Refresh Data'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'settings',
-          child: Text('Settings'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'help',
-          child: Text('Help & Support'),
-        ),
-      ],
     );
   }
 
-  Widget _buildToggleButton() {
-    return Row(
+Widget _buildToggleButton() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add horizontal padding
+    child: Row(
       children: [
         IconButton(
           icon: Icon(_isCollapsed ? Icons.menu : Icons.close, color: Colors.deepPurple),
@@ -358,20 +356,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
           },
         ),
         const Spacer(),
-        _buildAppBarActions(),
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0), // Right padding for feedback icon
+          child: _buildRequestsButton(),
+        ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSidebarItem(IconData icon, String label, Widget targetPage, {bool isLogout = false}) {
     return ListTile(
       leading: Icon(icon, color: Colors.deepPurple, size: 20),
       title: Text(label, style: const TextStyle(fontSize: 14)),
       onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => targetPage),
-        );
+        if (isLogout) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => targetPage),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => targetPage),
+          );
+        }
       },
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -462,9 +471,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.only(bottom: 20),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                        maxWidth: constraints.maxWidth,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -473,6 +485,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           _buildCarousel(),
                           _buildStatsCards(),
                           _buildIdentificationStats(),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
