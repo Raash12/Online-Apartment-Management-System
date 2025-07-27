@@ -3,9 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:frontend/UserPages/AvailableApartments.dart';
 
 import 'package:frontend/admin_pages/AdminApprovePage.dart';
+import 'package:frontend/admin_pages/ApartmentDetail.dart';
 import 'package:frontend/admin_pages/add_apartment.dart';
 import 'package:frontend/admin_pages/admin_apartment_view.dart';
 import 'package:frontend/admin_pages/admin_dashboard.dart';
+import 'package:frontend/admin_pages/apartments_list.dart';
 
 import 'firebase_options.dart';
 import 'login_screen.dart';
