@@ -148,7 +148,7 @@ Widget _buildStatCard(String title, String count, IconData icon, Color color) {
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 24, color: Colors.white),
+              child: Icon(icon, size: 30, color: Colors.white),
             ),
             const SizedBox(height: 6),
             Text(
