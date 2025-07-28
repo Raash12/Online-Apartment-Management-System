@@ -8,9 +8,12 @@ class ApartmentDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       appBar: AppBar(
-        title: Text(apartmentData['name'] ?? 'Apartment Detail'),
+        foregroundColor: Colors.white, 
+        title: Text(apartmentData['name'] ?? 'Apartment Detail' , ),
         backgroundColor: Colors.deepPurple,
+        
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

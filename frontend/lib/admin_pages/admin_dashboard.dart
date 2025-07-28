@@ -124,14 +124,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final gradientColors = _getCardGradient(color);
 
     return Card(
-      elevation: 3,
+      elevation: 4,
       margin: const EdgeInsets.all(6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: color.withOpacity(0.2), width: 0.5),
       ),
       child: Container(
-        height: 80, // Reduced height
+        height: 90, // Increased height from 80 to 90
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -141,12 +141,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(8.0), // Reduced padding
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
@@ -155,22 +155,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   icon,
                   size: 24,
                   color: Colors.white,
-                ), // Smaller icon
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 count,
                 style: const TextStyle(
-                  fontSize: 14, // Smaller font
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 9, // Smaller font
+                  fontSize: 10,
                   color: Colors.white.withOpacity(0.9),
                   fontWeight: FontWeight.w500,
                 ),
@@ -183,7 +183,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   List<Color> _getCardGradient(Color baseColor) {
-    // Unified color scheme
     if (baseColor == Colors.green) {
       return [const Color(0xFF4CAF50), const Color(0xFF8BC34A)];
     } else if (baseColor == Colors.blue) {
@@ -193,13 +192,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } else if (baseColor == Colors.purple) {
       return [const Color(0xFF9C27B0), const Color(0xFFBA68C8)];
     } else if (baseColor == Colors.indigo) {
-      return [const Color(0xFF3F51B5), const Color(0xFF7986CB)]; // Indigo
+      return [const Color(0xFF3F51B5), const Color(0xFF7986CB)];
     } else if (baseColor == Colors.teal) {
-      return [const Color(0xFF009688), const Color(0xFF4DB6AC)]; // Teal
+      return [const Color(0xFF009688), const Color(0xFF4DB6AC)];
     } else if (baseColor == Colors.amber) {
-      return [const Color(0xFFFFC107), const Color(0xFFFFD54F)]; // Amber
+      return [const Color(0xFFFFC107), const Color(0xFFFFD54F)];
     } else if (baseColor == Colors.lightGreen) {
-      return [const Color(0xFF8BC34A), const Color(0xFFAED581)]; // Light Green
+      return [const Color(0xFF8BC34A), const Color(0xFFAED581)];
     } else {
       return [baseColor.withOpacity(0.8), baseColor.withOpacity(0.4)];
     }
@@ -209,14 +208,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 3, // Fixed 3 columns
-      childAspectRatio: 0.75,
-      crossAxisSpacing: 8, // Reduced spacing
-      mainAxisSpacing: 8, // Reduced spacing
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 8,
-      ), // Reduced padding
+      crossAxisCount: 3,
+      childAspectRatio: 0.85,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       children: cards,
     );
   }
@@ -306,7 +302,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Icons.list_alt,
             Colors.blue,
           ),
-          const SizedBox.shrink(), // Placeholder for empty space
+          const SizedBox.shrink(),
         ]),
       ],
     );
@@ -469,15 +465,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildToggleButton() {
+  Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: Row(
         children: [
           IconButton(
             icon: Icon(
               _isCollapsed ? Icons.menu : Icons.close,
               color: Colors.deepPurple,
+              size: 28,
             ),
             onPressed: () {
               setState(() {
@@ -485,9 +482,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
               });
             },
           ),
+          const SizedBox(width: 12),
+          Flexible( // Use Flexible to prevent overflow
+            child: Text(
+              'Admin Dashboard',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+              overflow: TextOverflow.ellipsis, // Handle overflow
+            ),
+          ),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(left: 8.0),
             child: _buildRequestsButton(),
           ),
         ],
@@ -576,29 +585,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             _buildSidebar(),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                        maxWidth: constraints.maxWidth,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildToggleButton(),
-                          const SizedBox(height: 10),
-                          _buildCarousel(),
-                          _buildStatsCards(),
-                          _buildIdentificationStats(),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              child: SingleChildScrollView( // Removed LayoutBuilder
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAppBar(),
+                    const SizedBox(height: 10),
+                    _buildCarousel(),
+                    _buildStatsCards(),
+                    _buildIdentificationStats(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
           ],

@@ -68,7 +68,7 @@ class _ApartmentsListState extends State<ApartmentsList> {
                       leading: Icon(Icons.apartment, size: 40, color: Colors.blue),
                       title: Text(
                         apt['name'] ?? 'No Name',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18 , ),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

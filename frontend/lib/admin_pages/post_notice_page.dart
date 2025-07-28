@@ -80,10 +80,11 @@ class _PostNoticePageState extends State<PostNoticePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        title: const Text('Post Admin Notice'),
+        title: const Text('Admin Notice'),
         backgroundColor: Colors.deepPurple,
         elevation: 4,
         shadowColor: Colors.deepPurpleAccent,
+        foregroundColor: Colors.white, 
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -95,6 +96,7 @@ class _PostNoticePageState extends State<PostNoticePage> {
               controller: _messageController,
               label: "Notice Message",
               maxLines: 5,
+              
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -105,9 +107,11 @@ class _PostNoticePageState extends State<PostNoticePage> {
                 label: const Text("Post Notice"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white, 
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
+                    
                   ),
                   elevation: 4,
                   shadowColor: Colors.deepPurpleAccent,

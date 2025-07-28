@@ -107,6 +107,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
       appBar: AppBar(
         title: const Text('Add Apartment'),
         backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white, 
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -136,7 +137,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _addApartmentToFirestore,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple , foregroundColor: Colors.white, ),
                 child: const Text('Add Apartment'),
               ),
             ],
