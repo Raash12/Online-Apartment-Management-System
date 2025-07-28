@@ -37,6 +37,7 @@ class _MaterialRequestPageState extends State<MaterialRequestPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        foregroundColor: Colors.white,   
         title: const Text('Material Request'),
         backgroundColor: Colors.deepPurple,
         elevation: 4,
@@ -73,6 +74,7 @@ class _MaterialRequestPageState extends State<MaterialRequestPage> {
                 label: const Text('Submit Request'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white, 
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

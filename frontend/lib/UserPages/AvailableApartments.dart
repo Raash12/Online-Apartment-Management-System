@@ -11,6 +11,7 @@ class AvailableApartmentsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
       appBar: AppBar(
+        foregroundColor: Colors.white, 
         title: const Text('Available Apartments'),
         backgroundColor: Colors.deepPurple,
       ),

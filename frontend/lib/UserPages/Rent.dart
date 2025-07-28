@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:frontend/UserPages/my_rented_apartments_page.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:frontend/services/pdf_rental_invoice_service.dart';
@@ -51,7 +52,7 @@ class _RentNowPageState extends State<RentNowPage> {
         setState(() {
           _pricePerDay = doc['rent'] is int
               ? (doc['rent'] as int).toDouble()
-              : doc['rent'] as double; // Ensure it's a double
+              : doc['rent'] as double;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,6 +87,12 @@ class _RentNowPageState extends State<RentNowPage> {
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData(primarySwatch: Colors.deepPurple),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -167,8 +174,15 @@ class _RentNowPageState extends State<RentNowPage> {
       final pdfBytes = await PdfRentalInvoiceService.generateRentalInvoicePdf(rentalData);
       await Printing.layoutPdf(onLayout: (format) async => pdfBytes);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rented successfully")));
-      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Rented successfully")),
+      ).closed.then((_) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MyRentedApartmentsPage()),
+          (Route<dynamic> route) => false,
+        );
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
@@ -179,7 +193,10 @@ class _RentNowPageState extends State<RentNowPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Rent Apartment"), backgroundColor: Colors.blue.shade800),
+      appBar: AppBar(
+        title: const Text("Rent Apartment"),
+        backgroundColor: Colors.deepPurple,
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -232,6 +249,9 @@ class _RentNowPageState extends State<RentNowPage> {
                           icon: const Icon(Icons.calendar_today),
                           label: Text(_startDate == null ? 'Start Date' : DateFormat('MMM d, yyyy').format(_startDate!)),
                           onPressed: () => _pickDate(context, true),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.deepPurple,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -240,6 +260,9 @@ class _RentNowPageState extends State<RentNowPage> {
                           icon: const Icon(Icons.calendar_today),
                           label: Text(_endDate == null ? 'End Date' : DateFormat('MMM d, yyyy').format(_endDate!)),
                           onPressed: _startDate == null ? null : () => _pickDate(context, false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.deepPurple,
+                          ),
                         ),
                       ),
                     ],
@@ -263,9 +286,10 @@ class _RentNowPageState extends State<RentNowPage> {
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _submitBooking,
                       style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
                       child: _isSubmitting
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('PAY WITH EVC PLUS', style: TextStyle(fontSize: 16)),

@@ -12,9 +12,10 @@ class UserIdentificationRequestsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Apartment Requests'),
-        backgroundColor: Colors.deepPurple,  // changed here
+        title: const Text('Apartment Requests'),
+        backgroundColor: Colors.deepPurple,
         centerTitle: true,
+        foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -23,7 +24,7 @@ class UserIdentificationRequestsPage extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.deepPurple)); // changed color
+            return const Center(child: CircularProgressIndicator(color: Colors.deepPurple));
           }
 
           if (snapshot.hasError) {
@@ -42,14 +43,14 @@ class UserIdentificationRequestsPage extends StatelessWidget {
               final data = requests[index].data() as Map<String, dynamic>;
               final status = (data['status'] ?? '').toLowerCase();
 
-              // Use purple tones for statuses
+              // Use distinct colors for statuses
               Color statusColor;
               if (status == 'approved') {
-                statusColor = Colors.deepPurple.shade400;
+                statusColor = Colors.green; // Approved status color
               } else if (status == 'rejected') {
-                statusColor = Colors.deepPurple.shade200;
+                statusColor = Colors.red; // Rejected status color
               } else {
-                statusColor = Colors.deepPurple.shade100;
+                statusColor = Colors.grey; // Default for other statuses
               }
 
               return Card(
@@ -66,20 +67,20 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          backgroundColor: Colors.deepPurple.shade50,  // changed here
-                          child: const Icon(Icons.apartment, color: Colors.deepPurple),  // changed here
+                          backgroundColor: Colors.deepPurple.shade50,
+                          child: const Icon(Icons.apartment, color: Colors.deepPurple),
                         ),
                         title: Text(
                           data['apartmentName'] ?? 'Unknown Apartment',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,  // changed here
+                            color: Colors.deepPurple,
                           ),
                         ),
                         subtitle: Text(
                           'Submitted: ${(data['submittedAt'] != null) ? (data['submittedAt'] as Timestamp).toDate().toLocal().toString().split('.')[0] : 'Unknown'}',
-                          style: TextStyle(fontSize: 13, color: Colors.deepPurple.shade300),  // changed here
+                          style: TextStyle(fontSize: 13, color: Colors.deepPurple.shade300),
                         ),
                         trailing: Chip(
                           label: Text(
@@ -108,14 +109,22 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.payment),
-                            label: const Text("Rent Now"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,  // changed here
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                            icon: const Icon(Icons.payment, color: Colors.white),
+                            label: const Text(
+                              "Rent Now",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 2,
                             ),
                           ),
                         ),

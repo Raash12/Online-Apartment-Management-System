@@ -10,6 +10,7 @@ class ViewNoticesPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        foregroundColor: Colors.white, 
         title: const Text('Admin Notices'),
         backgroundColor: Colors.deepPurple,
         elevation: 4,
