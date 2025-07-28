@@ -26,17 +26,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
   ];
 
   final List<String> titles = [
-    'Luxury Apartment',
-    'Modern Apartment',
-    'Eco Apartment',
-    'Family Apartment',
+    'Luxury Retreat',
+    'Modern Haven',
+    'Eco Smart Living',
+    'Family Comfort Space',
   ];
 
   final List<String> descriptions = [
-    'Elegant and comfortable apartment.',
-    'Stylish apartment with modern design.',
-    'Smart eco-friendly apartment.',
-    'Spacious apartment for families.',
+    'Experience unmatched comfort and elegance.',
+    'A modern sanctuary with premium finishes.',
+    'Eco-conscious living with smart design.',
+    'Spacious, safe, and perfect for your family.',
   ];
 
   late final PageController _pageController;
@@ -115,65 +115,62 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  Widget _buildStatCard(
-    String title,
-    String count,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
     final gradientColors = _getCardGradient(color);
-
+    
     return Card(
-      elevation: 4,
+      elevation: 3,
       margin: const EdgeInsets.all(6),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         side: BorderSide(color: color.withOpacity(0.2), width: 0.5),
       ),
       child: Container(
-        height: 90, // Increased height from 80 to 90
+        height: 60, // Updated height to 60 pixels
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: gradientColors,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: Colors.white,
-                ),
+                child: Icon(icon, size: 20, color: Colors.white),
               ),
-              const SizedBox(height: 6),
-              Text(
-                count,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white.withOpacity(0.9),
-                  fontWeight: FontWeight.w500,
-                ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    count,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -191,29 +188,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return [const Color(0xFFFF9800), const Color(0xFFFFC107)];
     } else if (baseColor == Colors.purple) {
       return [const Color(0xFF9C27B0), const Color(0xFFBA68C8)];
-    } else if (baseColor == Colors.indigo) {
-      return [const Color(0xFF3F51B5), const Color(0xFF7986CB)];
-    } else if (baseColor == Colors.teal) {
-      return [const Color(0xFF009688), const Color(0xFF4DB6AC)];
-    } else if (baseColor == Colors.amber) {
-      return [const Color(0xFFFFC107), const Color(0xFFFFD54F)];
-    } else if (baseColor == Colors.lightGreen) {
-      return [const Color(0xFF8BC34A), const Color(0xFFAED581)];
     } else {
       return [baseColor.withOpacity(0.8), baseColor.withOpacity(0.4)];
     }
   }
 
   Widget _buildStatsGrid(List<Widget> cards) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 3,
-      childAspectRatio: 0.85,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      children: cards,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - 24;
+        final crossAxisCount = (availableWidth / 150).floor().clamp(1, 4); // Allow more columns
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: 1.8, // Adjusted for horizontal layout
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: cards,
+        );
+      },
     );
   }
 
@@ -273,36 +268,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         _buildStatsGrid([
           _buildStatCard(
-            'Apartments',
+            'Apartments', 
             apartmentCount.toString(),
-            Icons.apartment,
-            Colors.indigo,
+            Icons.apartment, 
+            Colors.indigo
           ),
           _buildStatCard(
-            'Rented',
+            'Rented', 
             rentedCount.toString(),
-            Icons.car_rental,
-            Colors.teal,
+            Icons.car_rental, 
+            Colors.teal
           ),
           _buildStatCard(
-            'Pending Material',
+            'Pending Material', 
             materialPendingCount.toString(),
-            Icons.pending_actions,
-            Colors.amber,
+            Icons.pending_actions, 
+            Colors.amber
           ),
           _buildStatCard(
-            'Approved Material',
+            'Approved Material', 
             materialApprovedCount.toString(),
-            Icons.check_circle_outline,
-            Colors.lightGreen,
+            Icons.check_circle_outline, 
+            Colors.lightGreen
           ),
-          _buildStatCard(
-            'Total Requests',
-            requestCount.toString(),
-            Icons.list_alt,
-            Colors.blue,
-          ),
-          const SizedBox.shrink(),
         ]),
       ],
     );
@@ -355,53 +343,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 10),
               children: [
-                _buildSidebarItem(
-                  Icons.add_circle_outlined,
-                  'Add Apartment',
-                  const AddApartmentPage(),
-                ),
-                const Divider(
-                  height: 20,
-                  thickness: 0.5,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                _buildSidebarItem(
-                  Icons.home_work_outlined,
-                  'Apartments list',
-                  const AdminApartmentViewPage(),
-                ),
+                _buildSidebarItem(Icons.add_circle_outlined, 'Add Apartment', const AddApartmentPage()),
+                const Divider(height: 20, thickness: 0.5, indent: 20, endIndent: 20),
+                _buildSidebarItem(Icons.home_work_outlined, 'Apartments list', const AdminApartmentViewPage()),
                 const SizedBox(height: 10),
-                _buildSidebarItem(
-                  Icons.perm_identity,
-                  'Identification',
-                  const AdminIdentificationApprovalPage(),
-                ),
+                _buildSidebarItem(Icons.perm_identity, 'Identification', const AdminIdentificationApprovalPage()),
                 const SizedBox(height: 10),
-                _buildSidebarItem(
-                  Icons.notifications_active,
-                  'Send Notice',
-                  const PostNoticePage(),
-                ),
-                const Divider(
-                  height: 20,
-                  thickness: 0.5,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                _buildSidebarItem(
-                  Icons.analytics_outlined,
-                  'Report',
-                  const RentalReportWidget(),
-                ),
+                _buildSidebarItem(Icons.notifications_active, 'Send Notice', const PostNoticePage()),
+                const Divider(height: 20, thickness: 0.5, indent: 20, endIndent: 20),
+                _buildSidebarItem(Icons.analytics_outlined, 'Report', const RentalReportWidget()),
                 const Spacer(),
                 const Divider(height: 20, thickness: 0.5),
-                _buildSidebarItem(
-                  Icons.logout,
-                  'Logout',
-                  LoginScreen(),
-                  isLogout: true,
-                ),
+                _buildSidebarItem(Icons.logout, 'Logout', LoginScreen(), isLogout: true),
               ],
             ),
           ),
@@ -410,12 +363,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildSidebarItem(
-    IconData icon,
-    String label,
-    Widget targetPage, {
-    bool isLogout = false,
-  }) {
+  Widget _buildSidebarItem(IconData icon, String label, Widget targetPage, {bool isLogout = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
@@ -429,13 +377,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         title: Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.deepPurple),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         minLeadingWidth: 10,
         horizontalTitleGap: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         onTap: () {
           if (isLogout) {
             Navigator.pushReplacement(
@@ -465,38 +418,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildToggleButton() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         children: [
           IconButton(
-            icon: Icon(
-              _isCollapsed ? Icons.menu : Icons.close,
-              color: Colors.deepPurple,
-              size: 28,
-            ),
+            icon: Icon(_isCollapsed ? Icons.menu : Icons.close, color: Colors.deepPurple),
             onPressed: () {
               setState(() {
                 _isCollapsed = !_isCollapsed;
               });
             },
           ),
-          const SizedBox(width: 12),
-          Flexible( // Use Flexible to prevent overflow
-            child: Text(
-              'Admin Dashboard',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-              overflow: TextOverflow.ellipsis, // Handle overflow
-            ),
-          ),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.only(left: 8.0),
+            padding: const EdgeInsets.only(right: 8.0),
             child: _buildRequestsButton(),
           ),
         ],
@@ -585,19 +522,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             _buildSidebar(),
             Expanded(
-              child: SingleChildScrollView( // Removed LayoutBuilder
-                padding: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildAppBar(),
-                    const SizedBox(height: 10),
-                    _buildCarousel(),
-                    _buildStatsCards(),
-                    _buildIdentificationStats(),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildToggleButton(),
+                          const SizedBox(height: 10),
+                          _buildCarousel(),
+                          _buildStatsCards(),
+                          _buildIdentificationStats(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
