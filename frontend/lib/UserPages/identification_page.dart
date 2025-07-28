@@ -28,9 +28,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
 
   Future<void> _submitIdentification() async {
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+      _showSnackBar('Please fill all fields', Icons.error, Colors.red);
       return;
     }
 
@@ -39,9 +37,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not logged in')),
-      );
+      _showSnackBar('User not logged in', Icons.error, Colors.red);
       setState(() => _isSubmitting = false);
       return;
     }
@@ -59,82 +55,186 @@ class _IdentificationPageState extends State<IdentificationPage> {
         'submittedAt': Timestamp.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Information submitted. Awaiting approval.')),
+      _showSnackBar(
+        'Information submitted successfully! Awaiting approval.',
+        Icons.check_circle,
+        Colors.green,
       );
+
+      _formKey.currentState!.reset();
+      await Future.delayed(const Duration(seconds: 2));
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error submitting: $e')),
-      );
+      _showSnackBar('Error submitting: ${e.toString()}', Icons.error, Colors.red);
     }
 
     setState(() => _isSubmitting = false);
+  }
+
+  void _showSnackBar(String message, IconData icon, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Identification'),
+        title: const Text('Tenant Identification'),
         backgroundColor: Colors.deepPurple,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Renting Apartment: ${widget.apartmentName}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
+              // Apartment Info
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.apartment, color: Colors.deepPurple),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          widget.apartmentName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
-              // Responsible Person Name
+              const Text(
+                'Responsible Person Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please provide details of the person responsible for this rental',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const Divider(height: 40, thickness: 1),
+
+              // Full Name
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Responsible Person Full Name'),
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: const Icon(Icons.person),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                 onSaved: (value) => _responsibleName = value ?? '',
               ),
-
               const SizedBox(height: 16),
 
-              // Responsible Person ID Number
+              // ID Number
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Responsible Person ID Number'),
+                decoration: InputDecoration(
+                  labelText: 'ID Number',
+                  prefixIcon: const Icon(Icons.credit_card),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                 onSaved: (value) => _responsibleIdNumber = value ?? '',
               ),
-
               const SizedBox(height: 16),
 
-              // Responsible Person Phone Number
+              // Phone Number
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Responsible Person Phone Number'),
                 keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: const Icon(Icons.phone),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                 onSaved: (value) => _responsiblePhone = value ?? '',
               ),
-
               const SizedBox(height: 16),
 
-              // Responsible Person Workplace
+              // Workplace
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Where does the Responsible Person Work?'),
+                decoration: InputDecoration(
+                  labelText: 'Workplace',
+                  prefixIcon: const Icon(Icons.work),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                 onSaved: (value) => _responsibleWorkPlace = value ?? '',
               ),
+              const SizedBox(height: 32),
 
-              const SizedBox(height: 30),
-
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitIdentification,
-                child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Submit'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18),
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isSubmitting ? null : _submitIdentification,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.send),
+                  label: Text(
+                    _isSubmitting ? 'Submitting...' : 'Submit Information',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 2,
+                  ),
                 ),
               ),
             ],

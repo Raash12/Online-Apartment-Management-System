@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
       ),
-     home: AdminDashboard(),
+     home: LoginScreen(),
 
     );
   }
