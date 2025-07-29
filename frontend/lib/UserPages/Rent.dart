@@ -110,6 +110,25 @@ class _RentNowPageState extends State<RentNowPage> {
     }
   }
 
+  void _showPaymentDialog(String title, String message, {VoidCallback? onOk}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (onOk != null) onOk();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate() || _startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,9 +153,7 @@ class _RentNowPageState extends State<RentNowPage> {
       final paymentResult = await Payment.paymentProcessing(paymentData);
 
       if (!paymentResult['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment Failed: ${paymentResult['message']}')),
-        );
+        _showPaymentDialog('Payment Failed', paymentResult['message']);
         return;
       }
 
@@ -174,9 +191,7 @@ class _RentNowPageState extends State<RentNowPage> {
       final pdfBytes = await PdfRentalInvoiceService.generateRentalInvoicePdf(rentalData);
       await Printing.layoutPdf(onLayout: (format) async => pdfBytes);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Rented successfully")),
-      ).closed.then((_) {
+      _showPaymentDialog('Payment Successful', 'Your payment was processed successfully!', onOk: () {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MyRentedApartmentsPage()),
@@ -184,7 +199,7 @@ class _RentNowPageState extends State<RentNowPage> {
         );
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      _showPaymentDialog('Error', 'Error: ${e.toString()}');
     } finally {
       setState(() => _isSubmitting = false);
     }

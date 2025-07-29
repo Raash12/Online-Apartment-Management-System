@@ -340,7 +340,7 @@ class _UserDashboardState extends State<UserDashboard> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
-        width: 120,
+        height: 150, // Fixed height for consistency
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
@@ -450,6 +450,7 @@ class _UserDashboardState extends State<UserDashboard> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 100,
+          height: 100, // Fixed height for quick action buttons
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
@@ -458,6 +459,7 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 30, color: color),
               const SizedBox(height: 8),
@@ -544,31 +546,65 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
           _buildCarousel(),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatCard(
-                  'Pending Requests',
-                  pendingRequestsCount.toString(),
-                  Icons.pending_actions,
-                  Colors.orange,
-                ),
-                _buildStatCard(
-                  'Rented Apartments',
-                  rentedApartmentsCount.toString(),
-                  Icons.home_work,
-                  Colors.green,
-                ),
-                _buildStatCard(
-                  'New Notices',
-                  noticeCount.toString(),
-                  Icons.notifications,
-                  Colors.blue,
-                ),
-              ],
-            ),
+          // Responsive stat cards section
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 600) {
+                // Desktop layout - horizontal cards
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatCard(
+                      'Pending Requests',
+                      pendingRequestsCount.toString(),
+                      Icons.pending_actions,
+                      Colors.orange,
+                    ),
+                    _buildStatCard(
+                      'Rented Apartments',
+                      rentedApartmentsCount.toString(),
+                      Icons.home_work,
+                      Colors.green,
+                    ),
+                    _buildStatCard(
+                      'New Notices',
+                      noticeCount.toString(),
+                      Icons.notifications,
+                      Colors.blue,
+                    ),
+                  ],
+                );
+              } else {
+                // Mobile layout - vertical cards with scrolling
+                return SizedBox(
+                  height: 170,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    children: [
+                      _buildStatCard(
+                        'Pending Requests',
+                        pendingRequestsCount.toString(),
+                        Icons.pending_actions,
+                        Colors.orange,
+                      ),
+                      _buildStatCard(
+                        'Rented Apartments',
+                        rentedApartmentsCount.toString(),
+                        Icons.home_work,
+                        Colors.green,
+                      ),
+                      _buildStatCard(
+                        'New Notices',
+                        noticeCount.toString(),
+                        Icons.notifications,
+                        Colors.blue,
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 16),
           _buildQuickActions(),
@@ -680,38 +716,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _dashboardCard(BuildContext context,
-      {required IconData icon, required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 5,
-        shadowColor: Colors.deepPurple.withOpacity(0.2),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 32, color: Colors.deepPurple),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -721,7 +725,6 @@ class _UserDashboardState extends State<UserDashboard> {
           Expanded(
             child: Scaffold(
               backgroundColor: Colors.grey[50],
-              // Only show app bar when on dashboard (index 0)
               appBar: _currentIndex == 0 
                   ? AppBar(
                       title: const Text('Dashboard'),
@@ -749,7 +752,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         ),
                       ],
                     )
-                  : null, // No app bar for other pages
+                  : null,
               body: _buildCurrentPage(),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _currentIndex,
