@@ -1,11 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:frontend/UserPages/my_rented_apartments_page.dart';
-import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
-import 'package:frontend/services/pdf_rental_invoice_service.dart';
 import 'package:frontend/utils/payment.dart';
+import 'package:intl/intl.dart';
 
 class RentNowPage extends StatefulWidget {
   final String apartmentId;
@@ -18,59 +16,83 @@ class RentNowPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<RentNowPage> createState() => _RentNowPageState();
+  _RentNowPageState createState() => _RentNowPageState();
 }
 
 class _RentNowPageState extends State<RentNowPage> {
   final _formKey = GlobalKey<FormState>();
-
-  final _fullNameController = TextEditingController();
-  final _phoneNumberController = TextEditingController();
-  final _evcNumberController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _paymentNumberController = TextEditingController();
   final _paymentAmountController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _endDate;
-  double? _pricePerDay;
+  double? _rentPrice;
   double? _totalPrice;
-  bool _isSubmitting = false;
+  bool _isProcessing = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchApartmentPrice();
+    _fetchApartmentDetails();
   }
 
-  Future<void> _fetchApartmentPrice() async {
+  Future<void> _fetchApartmentDetails() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('apartments')
           .doc(widget.apartmentId)
           .get();
 
-      if (doc.exists && doc.data()!.containsKey('rent')) {
+      if (doc.exists) {
         setState(() {
-          _pricePerDay = doc['rent'] is int
-              ? (doc['rent'] as int).toDouble()
-              : doc['rent'] as double;
+          _rentPrice = (doc.data()?['rent'] as num?)?.toDouble() ?? 0.0;
+          _isLoading = false;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load apartment price')),
+          const SnackBar(content: Text('Apartment not found')),
         );
+        Navigator.pop(context);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading price: ${e.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
+      Navigator.pop(context);
     }
   }
 
-  void _updateTotalPrice() {
-    if (_startDate != null && _endDate != null && !_endDate!.isBefore(_startDate!)) {
-      final rentalDays = _endDate!.difference(_startDate!).inDays + 1;
+  Future<void> _pickDate(BuildContext context, bool isStartDate) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
+      firstDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+
+    if (pickedDate != null) {
       setState(() {
-        _totalPrice = (_pricePerDay ?? 0) * rentalDays;
+        if (isStartDate) {
+          _startDate = pickedDate;
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+            _endDate = null;
+          }
+        } else {
+          _endDate = pickedDate;
+        }
+        _calculateTotalPrice();
+      });
+    }
+  }
+
+  void _calculateTotalPrice() {
+    if (_startDate != null && _endDate != null && _rentPrice != null) {
+      final days = _endDate!.difference(_startDate!).inDays + 1;
+      setState(() {
+        _totalPrice = _rentPrice! * days;
         _paymentAmountController.text = _totalPrice!.toStringAsFixed(2);
       });
     } else {
@@ -81,240 +103,202 @@ class _RentNowPageState extends State<RentNowPage> {
     }
   }
 
-  Future<void> _pickDate(BuildContext context, bool isStart) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData(primarySwatch: Colors.deepPurple),
-          child: child!,
-        );
-      },
-    );
+  Future<void> _processPayment() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startDate = picked;
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-            _endDate = null;
-          }
-        } else {
-          _endDate = picked;
-        }
-      });
-      _updateTotalPrice();
-    }
-  }
-
-  void _showPaymentDialog(String title, String message, {VoidCallback? onOk}) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (onOk != null) onOk();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _submitBooking() async {
-    if (!_formKey.currentState!.validate() || _startDate == null || _endDate == null) {
+    if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields and select valid dates.')),
+        const SnackBar(content: Text('Please select start and end dates')),
       );
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    if (_endDate!.isBefore(_startDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('End date cannot be before start date')),
+      );
+      return;
+    }
+
+    setState(() => _isProcessing = true);
 
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      final referenceId = "APT-${DateTime.now().millisecondsSinceEpoch}";
-
-      final paymentData = {
-        "accountNo": _evcNumberController.text.trim(),
-        "referenceId": referenceId,
-        "amount": _totalPrice,
-        "description": "Rental: ${widget.apartmentName}",
-      };
-
-      final paymentResult = await Payment.paymentProcessing(paymentData);
-
-      if (!paymentResult['success']) {
-        _showPaymentDialog('Payment Failed', paymentResult['message']);
-        return;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
       }
 
-      await FirebaseFirestore.instance.collection('rent_now').add({
-        'userId': uid,
-        'apartmentId': widget.apartmentId,
-        'apartmentName': widget.apartmentName,
-        'startDate': _startDate,
-        'endDate': _endDate,
-        'status': 'active',
-        'createdAt': FieldValue.serverTimestamp(),
-        'customerName': _fullNameController.text.trim(),
-        'customerContact': _phoneNumberController.text.trim(),
-        'paymentNumber': _evcNumberController.text.trim(),
-        'paymentAmount': _totalPrice,
-        'paymentReference': referenceId,
-      });
+      final rentalDays = _endDate!.difference(_startDate!).inDays + 1;
+      final refId = 'REF-${DateTime.now().millisecondsSinceEpoch}';
 
-      await FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId).update({
-        'status': 'rented',
-        'rentedUntil': _endDate,
-      });
+      // ✅ Make Waafi API Payment Call
+      final paymentResponse = await Payment.paymentProcessing(
+        phoneNumber: _paymentNumberController.text.trim(),
+        amount: _totalPrice!.toStringAsFixed(2),
+        referenceId: refId,
+        description: 'Apartment Rent Payment for ${widget.apartmentName}',
+      );
+
+      if (!paymentResponse['success']) {
+        throw Exception(paymentResponse['message']);
+      }
+
+      final invoiceId = paymentResponse['invoiceRef'];
+
+      // ✅ Save rental & payment info in Firestore
+      final batch = FirebaseFirestore.instance.batch();
+      final rentalRef = FirebaseFirestore.instance.collection('rentals').doc();
+      final paymentRef = FirebaseFirestore.instance.collection('payments').doc();
+      final apartmentRef = FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId);
 
       final rentalData = {
         'apartmentId': widget.apartmentId,
         'apartmentName': widget.apartmentName,
-        'totalPrice': _totalPrice,
-        'startDate': _startDate,
-        'endDate': _endDate,
-        'paymentReference': referenceId,
-        'customerName': _fullNameController.text.trim(),
-        'customerContact': _phoneNumberController.text.trim(),
+        'userId': user.uid,
+        'userName': _nameController.text.trim(),
+        'userPhone': _phoneController.text.trim(),
+        'startDate': Timestamp.fromDate(_startDate!),
+        'endDate': Timestamp.fromDate(_endDate!),
+        'rentPrice': _rentPrice,
+        'totalAmount': _totalPrice,
+        'rentalDays': rentalDays,
+        'paymentMethod': 'Mobile Money',
+        'paymentNumber': _paymentNumberController.text.trim(),
+        'paymentReference': invoiceId,
+        'status': 'active',
+        'createdAt': Timestamp.now(),
       };
 
-      final pdfBytes = await PdfRentalInvoiceService.generateRentalInvoicePdf(rentalData);
-      await Printing.layoutPdf(onLayout: (format) async => pdfBytes);
+      final paymentData = {
+        'userId': user.uid,
+        'apartmentId': widget.apartmentId,
+        'amount': _totalPrice,
+        'paymentMethod': 'Mobile Money',
+        'paymentNumber': _paymentNumberController.text.trim(),
+        'paymentReference': invoiceId,
+        'status': 'completed',
+        'createdAt': Timestamp.now(),
+      };
 
-      _showPaymentDialog('Payment Successful', 'Your payment was processed successfully!', onOk: () {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MyRentedApartmentsPage()),
-          (Route<dynamic> route) => false,
-        );
-      });
+      batch.set(rentalRef, rentalData);
+      batch.set(paymentRef, paymentData);
+      batch.update(apartmentRef, {'status': 'rented'});
+
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment successful! Invoice: $invoiceId'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      _showPaymentDialog('Error', 'Error: ${e.toString()}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      setState(() => _isSubmitting = false);
+      setState(() => _isProcessing = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Rent Apartment"),
+        title: const Text('Rent Apartment'),
         backgroundColor: Colors.deepPurple,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Text(widget.apartmentName,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Text('Rent: \$${_rentPrice?.toStringAsFixed(2)} per day'),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Enter your name' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Enter phone' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _paymentNumberController,
+                decoration: const InputDecoration(labelText: 'Payment Number', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Enter payment number' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _paymentAmountController,
+                enabled: false,
+                decoration: const InputDecoration(labelText: 'Total Amount', border: OutlineInputBorder()),
+              ),
+
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  Text("Apartment: ${widget.apartmentName}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  if (_pricePerDay != null)
-                    Text('\$${_pricePerDay!.toStringAsFixed(2)} per day', style: TextStyle(color: Colors.grey[700])),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _fullNameController,
-                    decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _phoneNumberController,
-                    decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _evcNumberController,
-                    decoration: const InputDecoration(labelText: 'EVC Plus Number', hintText: 'e.g., 615123456', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Required';
-                      if (!RegExp(r'^[0-9]{9}$').hasMatch(value)) return 'Enter a valid 9-digit number';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _paymentAmountController,
-                    enabled: false,
-                    decoration: const InputDecoration(labelText: 'Amount (USD)', border: OutlineInputBorder()),
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.calendar_today),
-                          label: Text(_startDate == null ? 'Start Date' : DateFormat('MMM d, yyyy').format(_startDate!)),
-                          onPressed: () => _pickDate(context, true),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.calendar_today),
-                          label: Text(_endDate == null ? 'End Date' : DateFormat('MMM d, yyyy').format(_endDate!)),
-                          onPressed: _startDate == null ? null : () => _pickDate(context, false),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (_totalPrice != null)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total Price:', style: TextStyle(fontSize: 18)),
-                          Text('\$${_totalPrice!.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.date_range),
+                      label: Text(_startDate == null
+                          ? 'Start Date'
+                          : DateFormat('yyyy-MM-dd').format(_startDate!)),
+                      onPressed: () => _pickDate(context, true),
                     ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submitBooking,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: _isSubmitting
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('PAY WITH EVC PLUS', style: TextStyle(fontSize: 16)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.date_range),
+                      label: Text(_endDate == null
+                          ? 'End Date'
+                          : DateFormat('yyyy-MM-dd').format(_endDate!)),
+                      onPressed: _startDate == null
+                          ? null
+                          : () => _pickDate(context, false),
                     ),
                   ),
                 ],
               ),
-            ),
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isProcessing ? null : _processPayment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isProcessing
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('CONFIRM PAYMENT'),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

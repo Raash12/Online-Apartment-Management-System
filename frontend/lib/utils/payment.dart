@@ -1,38 +1,43 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:frontend/utils/utils.dart';
 import 'package:http/http.dart' as http;
 
 class Payment {
   static String waafiUrl = 'https://api.waafipay.net/asm';
 
-  static Future<Map<String, dynamic>> paymentProcessing(
-      Map<String, dynamic> paymentData) async {
+  static Future<Map<String, dynamic>> paymentProcessing({
+    required String phoneNumber,
+    required String amount,
+    required String referenceId,
+    required String description,
+  }) async {
     try {
-      String invoice = Utils.generateInvoiceId();
       // Generate unique 11-digit requestId
       String requestId = List.generate(11, (index) => Random().nextInt(10)).join();
 
+      // Use current timestamp as invoiceId
+      String invoice = DateTime.now().millisecondsSinceEpoch.toString();
+
       var paymentBody = {
         'schemaVersion': "1.0",
-        "requestId": requestId,  // Dynamic requestId
-        'timestamp': DateTime.now().toIso8601String(),  // ISO formatted timestamp
+        "requestId": requestId,
+        'timestamp': DateTime.now().toIso8601String(),
         'channelName': "WEB",
         'serviceName': "API_PURCHASE",
         'serviceParams': {
-          'merchantUid': "M0910291",  // Correct merchant ID
-          'apiUserId': "1000416",     // Correct API user ID
-          'apiKey': "API-675418888AHX",  // Correct API key
+          'merchantUid': "M0910291",        // Your merchant ID (int or string based on API)
+          'apiUserId': 1000416,             // Must be int (not string)
+          'apiKey': "API-675418888AHX",    // Your API key
           'paymentMethod': "mwallet_account",
           'payerInfo': {
-            'accountNo': paymentData['accountNo'],
+            'accountNo': phoneNumber,
           },
           'transactionInfo': {
-            'referenceId': paymentData['referenceId'],
+            'referenceId': referenceId,
             'invoiceId': invoice,
-            'amount': paymentData['amount'].toDouble(),  // Ensure double value
+            'amount': double.parse(amount),
             'currency': "USD",
-            'description': paymentData['description'],
+            'description': description,
           },
         },
       };
@@ -44,7 +49,8 @@ class Payment {
       );
 
       final responseData = json.decode(response.body);
-      if (responseData['responseCode'] == "200") {  // Waafi uses String status codes
+
+      if (responseData['responseCode'] == "2001") {
         return {
           'success': true,
           'message': responseData['responseMsg'],
