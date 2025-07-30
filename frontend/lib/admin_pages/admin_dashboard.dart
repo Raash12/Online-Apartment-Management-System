@@ -82,7 +82,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     final apartments = await firestore.collection('apartments').get();
     final identifications = await firestore.collection('identifications').get();
-    final rentNow = await firestore.collection('rent_now').get();
+    final rentNow = await firestore.collection('rentals').get();
 
     final materialPending = await firestore
         .collection('material_requests')

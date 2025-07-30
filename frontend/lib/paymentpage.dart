@@ -43,12 +43,12 @@ class _PaymentPageState extends State<PaymentPage> {
     }
 
     try {
-      final paymentResponse = await Payment.paymentProcessing({
-        'accountNo': pin,
-        'referenceId': 'REF${DateTime.now().millisecondsSinceEpoch}', // Numeric reference
-        'amount': widget.totalPrice.toDouble(),  // Convert to double
-        'description': 'Apartment Rental: ${widget.apartment['apartment_name']}',
-      });
+      final paymentResponse = await Payment.paymentProcessing(
+        phoneNumber: pin,
+        amount: widget.totalPrice.toString(),
+        referenceId: '${widget.apartment['apartment_id']}-${DateTime.now().millisecondsSinceEpoch}',
+        description: 'Rental payment for ${widget.apartment['apartment_name']}',
+      );
 
       if (paymentResponse['success'] == true) {
         // Save to Firestore

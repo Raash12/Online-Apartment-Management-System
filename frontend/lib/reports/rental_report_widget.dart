@@ -293,7 +293,7 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
             const SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('rent_now').snapshots(),
+                stream: FirebaseFirestore.instance.collection('rentals').snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator(color: Colors.deepPurple));

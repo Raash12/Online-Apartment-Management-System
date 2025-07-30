@@ -1,11 +1,11 @@
 name: frontend
 description: "A new Flutter project."
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.8.1 <4.0.0'
 
 dependencies:
   flutter:
@@ -13,7 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^3.14.0
   firebase_auth: ^5.0.0
-  cloud_firestore: 5.6.12
+  cloud_firestore: ^5.6.12
   image_picker: ^1.1.2
   firebase_storage: ^12.0.0
   file_picker: ^8.0.7
@@ -24,6 +24,8 @@ dependencies:
   fluttertoast: ^8.2.9
   uuid: ^4.5.1
   http: ^1.4.0
+  lottie: ^3.3.1
+  page_transition: ^2.2.1
 
 dev_dependencies:
   flutter_test:
@@ -33,5 +35,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - image/
-    
+    - image/  # Your existing image directory remains unchanged
+    - assets/splash/  # New directory for splash screen assets only
+
+flutter_native_splash:
+  color: "#0F2027"
+  image: assets/splash/splash_logo.jpg  # Splash-specific assets go here
+  android: true
+  ios: true
+  web: true

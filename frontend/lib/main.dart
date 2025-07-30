@@ -12,6 +12,7 @@ import 'package:frontend/admin_pages/apartments_list.dart';
 import 'package:frontend/admin_pages/material_approval_page.dart';
 import 'package:frontend/admin_pages/post_notice_page.dart';
 import 'package:frontend/UserPages/view_notices_page.dart';
+import 'package:frontend/plash_screen.dart';
 import 'package:frontend/reports/rental_report_widget.dart';
 
 import 'firebase_options.dart';
