@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-class ApartmentDetailPage extends StatelessWidget {
+class  ApartmentDetailPage extends StatelessWidget {
   final Map<String, dynamic> apartmentData;
 
   const ApartmentDetailPage({super.key, required this.apartmentData});
+
 
   @override
   Widget build(BuildContext context) {
