@@ -1,3 +1,4 @@
+// rental_report_widget.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -71,7 +72,7 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
   }
 
   String _formatCurrency(num? value) {
-    return value?.toStringAsFixed(2) ?? '0.00';
+    return value != null ? value.toStringAsFixed(2) : '0.00';
   }
 
   String _formatTimestamp(Timestamp? ts) {
@@ -79,12 +80,29 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
   }
 
   void _applyFilterAndSort() {
+    final queryLower = _searchQuery.toLowerCase();
+
     List<QueryDocumentSnapshot> docs = _allDocs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      final date = (data['startDate'] as Timestamp?)?.toDate();
 
+      // Date range filtering based on rental start date
+      final date = (data['startDate'] as Timestamp?)?.toDate();
       if (_startDate != null && date != null && date.isBefore(_startDate!)) return false;
       if (_endDate != null && date != null && date.isAfter(_endDate!)) return false;
+
+      // Text search across apartmentName, userName, userPhone
+      if (queryLower.isNotEmpty) {
+        final apartment = (data['apartmentName'] ?? '').toString().toLowerCase();
+        final userName = (data['userName'] ?? '').toString().toLowerCase();
+        final userPhone = (data['userPhone'] ?? '').toString().toLowerCase();
+
+        if (!(apartment.contains(queryLower) ||
+            userName.contains(queryLower) ||
+            userPhone.contains(queryLower))) {
+          return false;
+        }
+      }
+
       return true;
     }).toList();
 
@@ -94,18 +112,42 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
         final bData = b.data() as Map<String, dynamic>;
 
         switch (_sortColumnIndex) {
-          case 0:
-            return _sortAscending ? (aData['apartmentName'] ?? '').compareTo(bData['apartmentName'] ?? '') : (bData['apartmentName'] ?? '').compareTo(aData['apartmentName'] ?? '');
-          case 3:
-            return _sortAscending ? ((aData['paymentAmount'] as num?) ?? 0).compareTo((bData['paymentAmount'] as num?) ?? 0) : ((bData['paymentAmount'] as num?) ?? 0).compareTo((aData['paymentAmount'] as num?) ?? 0);
-          case 4:
-            return _sortAscending ? ((aData['days'] as num?) ?? 0).compareTo((bData['days'] as num?) ?? 0) : ((bData['days'] as num?) ?? 0).compareTo((aData['days'] as num?) ?? 0);
-          case 5:
-            return _sortAscending ? ((aData['totalPrice'] as num?) ?? 0).compareTo((bData['totalPrice'] as num?) ?? 0) : ((bData['totalPrice'] as num?) ?? 0).compareTo((aData['totalPrice'] as num?) ?? 0);
-          case 6:
-            return _sortAscending ? ((aData['startDate'] as Timestamp?) ?? Timestamp(0, 0)).compareTo((bData['startDate'] as Timestamp?) ?? Timestamp(0, 0)) : ((bData['startDate'] as Timestamp?) ?? Timestamp(0, 0)).compareTo((aData['startDate'] as Timestamp?) ?? Timestamp(0, 0));
-          case 7:
-            return _sortAscending ? ((aData['endDate'] as Timestamp?) ?? Timestamp(0, 0)).compareTo((bData['endDate'] as Timestamp?) ?? Timestamp(0, 0)) : ((bData['endDate'] as Timestamp?) ?? Timestamp(0, 0)).compareTo((aData['endDate'] as Timestamp?) ?? Timestamp(0, 0));
+          case 0: // Apartment
+            return _sortAscending
+                ? (aData['apartmentName'] ?? '').toString().compareTo((bData['apartmentName'] ?? '').toString())
+                : (bData['apartmentName'] ?? '').toString().compareTo((aData['apartmentName'] ?? '').toString());
+          case 1: // Customer Name
+            return _sortAscending
+                ? (aData['userName'] ?? '').toString().compareTo((bData['userName'] ?? '').toString())
+                : (bData['userName'] ?? '').toString().compareTo((aData['userName'] ?? '').toString());
+          case 2: // Phone
+            return _sortAscending
+                ? (aData['userPhone'] ?? '').toString().compareTo((bData['userPhone'] ?? '').toString())
+                : (bData['userPhone'] ?? '').toString().compareTo((aData['userPhone'] ?? '').toString());
+          case 3: // Rent/Day
+            return _sortAscending
+                ? ((aData['rentPrice'] as num?) ?? 0).compareTo(((bData['rentPrice'] as num?) ?? 0))
+                : ((bData['rentPrice'] as num?) ?? 0).compareTo(((aData['rentPrice'] as num?) ?? 0));
+          case 4: // Days
+            return _sortAscending
+                ? ((aData['rentalDays'] as num?) ?? 0).compareTo(((bData['rentalDays'] as num?) ?? 0))
+                : ((bData['rentalDays'] as num?) ?? 0).compareTo(((aData['rentalDays'] as num?) ?? 0));
+          case 5: // Total
+            return _sortAscending
+                ? ((aData['totalAmount'] as num?) ?? 0).compareTo(((bData['totalAmount'] as num?) ?? 0))
+                : ((bData['totalAmount'] as num?) ?? 0).compareTo(((aData['totalAmount'] as num?) ?? 0));
+          case 6: // Start Date
+            return _sortAscending
+                ? (((aData['startDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                    .compareTo(((bData['startDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                : (((bData['startDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                    .compareTo(((aData['startDate'] as Timestamp?) ?? Timestamp(0, 0)));
+          case 7: // End Date
+            return _sortAscending
+                ? (((aData['endDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                    .compareTo(((bData['endDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                : (((bData['endDate'] as Timestamp?) ?? Timestamp(0, 0)))
+                    .compareTo(((aData['endDate'] as Timestamp?) ?? Timestamp(0, 0)));
           default:
             return 0;
         }
@@ -181,6 +223,8 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
                 headerDecoration: pw.BoxDecoration(color: PdfColors.purple),
                 headers: [
                   'Apartment',
+                  'Customer Name',
+                  'Phone',
                   'Rent/Day',
                   'Days',
                   'Total',
@@ -191,9 +235,11 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
                   final data = doc.data() as Map<String, dynamic>;
                   return [
                     data['apartmentName'] ?? '-',
-                    _formatCurrency(data['paymentAmount'] as num?),
-                    '${data['days'] ?? 0}',
-                    _formatCurrency(data['totalPrice'] as num?),
+                    data['userName'] ?? '-',
+                    data['userPhone'] ?? '-',
+                    _formatCurrency(data['rentPrice'] as num?),
+                    '${data['rentalDays'] ?? 0}',
+                    _formatCurrency(data['totalAmount'] as num?),
                     _pdfDateFormat.format((data['startDate'] as Timestamp).toDate()),
                     _pdfDateFormat.format((data['endDate'] as Timestamp).toDate()),
                   ];
@@ -285,7 +331,15 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
                         ),
                       ],
                     ),
-                   
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        labelText: 'Search (apartment, customer name, phone)',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -316,8 +370,12 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
                         headingRowColor: MaterialStateProperty.all(Colors.deepPurple.shade100),
                         dataRowColor: MaterialStateProperty.all(Colors.white),
                         columnSpacing: 28,
+                        sortAscending: _sortAscending,
+                        sortColumnIndex: _sortColumnIndex,
                         columns: [
                           DataColumn(label: _header('Apartment'), onSort: (i, asc) => _onSort(i, asc)),
+                          DataColumn(label: _header('Customer Name'), onSort: (i, asc) => _onSort(i, asc)),
+                          DataColumn(label: _header('Phone'), onSort: (i, asc) => _onSort(i, asc)),
                           DataColumn(label: _header('Rent/Day'), numeric: true, onSort: (i, asc) => _onSort(i, asc)),
                           DataColumn(label: _header('Days'), numeric: true, onSort: (i, asc) => _onSort(i, asc)),
                           DataColumn(label: _header('Total'), numeric: true, onSort: (i, asc) => _onSort(i, asc)),
@@ -329,9 +387,11 @@ class _RentalReportWidgetState extends State<RentalReportWidget> {
                           return DataRow(
                             cells: [
                               DataCell(Text(data['apartmentName'] ?? '-', style: TextStyle(color: Colors.deepPurple.shade900))),
-                              DataCell(Text(_formatCurrency(data['paymentAmount'] as num?), style: TextStyle(color: Colors.deepPurple.shade900))),
-                              DataCell(Text('${data['days'] ?? 0}', style: TextStyle(color: Colors.deepPurple.shade900))),
-                              DataCell(Text(_formatCurrency(data['totalPrice'] as num?), style: TextStyle(color: Colors.deepPurple.shade900))),
+                              DataCell(Text(data['userName'] ?? '-', style: TextStyle(color: Colors.deepPurple.shade900))),
+                              DataCell(Text(data['userPhone'] ?? '-', style: TextStyle(color: Colors.deepPurple.shade900))),
+                              DataCell(Text(_formatCurrency(data['rentPrice'] as num?), style: TextStyle(color: Colors.deepPurple.shade900))),
+                              DataCell(Text('${data['rentalDays'] ?? 0}', style: TextStyle(color: Colors.deepPurple.shade900))),
+                              DataCell(Text(_formatCurrency(data['totalAmount'] as num?), style: TextStyle(color: Colors.deepPurple.shade900))),
                               DataCell(Text(_formatTimestamp(data['startDate'] as Timestamp?), style: TextStyle(color: Colors.deepPurple.shade900))),
                               DataCell(Text(_formatTimestamp(data['endDate'] as Timestamp?), style: TextStyle(color: Colors.deepPurple.shade900))),
                             ],
