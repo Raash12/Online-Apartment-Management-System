@@ -12,29 +12,38 @@ class MyRentedApartmentsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Rented Apartments'),
+        title: const Text(
+          'My Rented Apartments',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('rentals') // your rentals collection
+            .collection('rentals')
             .where('userId', isEqualTo: currentUserId)
-           
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(color: Colors.deepPurple));
+              child: CircularProgressIndicator(color: Colors.deepPurple),
+            );
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text('Something went wrong.'));
+            return const Center(child: Text('Something went wrong.', style: TextStyle(color: Colors.white)));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('You have not rented any apartments.'));
+            return const Center(
+              child: Text('You have not rented any apartments.', style: TextStyle(color: Colors.white)),
+            );
           }
 
           final rentals = snapshot.data!.docs;
@@ -44,9 +53,7 @@ class MyRentedApartmentsPage extends StatelessWidget {
             itemCount: rentals.length,
             itemBuilder: (context, index) {
               final rentalData = rentals[index].data() as Map<String, dynamic>;
-           
 
-              // Extract fields safely
               final apartmentName = rentalData['apartmentName'] ?? 'Unknown Apartment';
               final status = (rentalData['status'] ?? '').toString().toLowerCase();
 
@@ -80,8 +87,9 @@ class MyRentedApartmentsPage extends StatelessWidget {
               }
 
               return Card(
+                color: Colors.deepPurple.shade700,
                 margin: const EdgeInsets.only(bottom: 16),
-                elevation: 3,
+                elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -93,20 +101,20 @@ class MyRentedApartmentsPage extends StatelessWidget {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          backgroundColor: Colors.deepPurple.shade50,
-                          child: const Icon(Icons.home, color: Colors.deepPurple),
+                          backgroundColor: Colors.deepPurple.shade200,
+                          child: const Icon(Icons.home, color: Colors.white),
                         ),
                         title: Text(
                           apartmentName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: Colors.white,
                           ),
                         ),
                         subtitle: Text(
                           'Rented on: ${DateFormat('MMM d, yyyy').format(createdAt)}',
-                          style: TextStyle(color: Colors.deepPurple.shade300),
+                          style: const TextStyle(color: Colors.white70),
                         ),
                         trailing: Chip(
                           label: Text(
@@ -120,14 +128,17 @@ class MyRentedApartmentsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       if (startDate != null)
-                        Text('Start Date: ${DateFormat('MMM d, yyyy').format(startDate)}'),
+                        Text('Start Date: ${DateFormat('MMM d, yyyy').format(startDate)}',
+                            style: const TextStyle(color: Colors.white)),
                       if (endDate != null)
-                        Text('End Date: ${DateFormat('MMM d, yyyy').format(endDate)}'),
+                        Text('End Date: ${DateFormat('MMM d, yyyy').format(endDate)}',
+                            style: const TextStyle(color: Colors.white)),
                       const SizedBox(height: 8),
-                      Text('Total Paid: \$${totalAmount.toStringAsFixed(2)}'),
+                      Text('Total Paid: \$${totalAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(color: Colors.white)),
                       const SizedBox(height: 8),
-                      Text('Payment Reference: $paymentReference'),
-                      // You can add a button here for more actions if needed
+                      Text('Payment Reference: $paymentReference',
+                          style: const TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -136,6 +147,7 @@ class MyRentedApartmentsPage extends StatelessWidget {
           );
         },
       ),
+      backgroundColor: Colors.deepPurple[900],
     );
   }
 }

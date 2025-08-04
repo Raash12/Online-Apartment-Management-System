@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:frontend/UserPages/AvailableApartments.dart';
 import 'package:frontend/UserPages/MyRequestStatusPage.dart';
+import 'package:frontend/UserPages/UserVisitor.dart';
 import 'package:frontend/UserPages/Userprofile.dart';
+import 'package:frontend/UserPages/VisitorRegistration.dart';
 import 'package:frontend/UserPages/my_rented_apartments_page.dart';
 import 'package:frontend/UserPages/material_request_page.dart';
 import 'package:frontend/UserPages/view_notices_page.dart';
@@ -226,6 +228,33 @@ class _UserDashboardState extends State<UserDashboard> {
                     });
                   },
                 ),
+                _buildSidebarItem(
+                  Icons.share_arrival_time,
+                  'Visitor Registration',
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) =>  AddVisitorPage()),
+                    );
+                    setState(() {
+                      _isCollapsed = true;
+                    });
+                  },
+                ),
+                _buildSidebarItem(
+                  Icons.share_arrival_time,
+                  'My Visitor list',
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => UserVisitorsPage ()),
+                    );
+                    setState(() {
+                      _isCollapsed = true;
+                    });
+                  },
+                ),
+                
                 const Divider(height: 30, thickness: 0.5, indent: 20, endIndent: 20),
                 _buildSidebarItem(
                   Icons.logout,

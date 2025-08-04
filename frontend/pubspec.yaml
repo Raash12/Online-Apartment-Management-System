@@ -36,11 +36,6 @@ flutter:
   uses-material-design: true
   assets:
     - image/  # Your existing image directory remains unchanged
-    - assets/splash/  # New directory for splash screen assets only
+   # New directory for splash screen assets only
 
-flutter_native_splash:
-  color: "#0F2027"
-  image: assets/splash/splash_logo.jpg  # Splash-specific assets go here
-  android: true
-  ios: true
-  web: true
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:frontend/UserPages/Rent.dart';
+import 'package:intl/intl.dart';
 
 class UserIdentificationRequestsPage extends StatelessWidget {
   const UserIdentificationRequestsPage({super.key});
@@ -12,19 +12,22 @@ class UserIdentificationRequestsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Apartment Requests'),
+        automaticallyImplyLeading: false, // This removes the back button
+        title: const Text('My Rented Apartments'),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('identifications')
+            .collection('rentals')
             .where('userId', isEqualTo: currentUserId)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.deepPurple));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.deepPurple),
+            );
           }
 
           if (snapshot.hasError) {
@@ -32,35 +35,60 @@ class UserIdentificationRequestsPage extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No requests submitted yet.'));
+            return const Center(
+                child: Text('You have not rented any apartments.'));
           }
 
-          final requests = snapshot.data!.docs;
+          final rentals = snapshot.data!.docs;
 
           return ListView.builder(
-            itemCount: requests.length,
+            padding: const EdgeInsets.all(16),
+            itemCount: rentals.length,
             itemBuilder: (context, index) {
-              final data = requests[index].data() as Map<String, dynamic>;
-              final status = (data['status'] ?? '').toLowerCase();
+              final rentalData = rentals[index].data() as Map<String, dynamic>;
 
-              // Use distinct colors for statuses
+              final apartmentName =
+                  rentalData['apartmentName'] ?? 'Unknown Apartment';
+              final status =
+                  (rentalData['status'] ?? '').toString().toLowerCase();
+
+              final createdAtTimestamp = rentalData['createdAt'];
+              final createdAt = createdAtTimestamp is Timestamp
+                  ? createdAtTimestamp.toDate()
+                  : DateTime.now();
+
+              final startDateTimestamp = rentalData['startDate'];
+              final startDate = startDateTimestamp is Timestamp
+                  ? startDateTimestamp.toDate()
+                  : null;
+
+              final endDateTimestamp = rentalData['endDate'];
+              final endDate = endDateTimestamp is Timestamp
+                  ? endDateTimestamp.toDate()
+                  : null;
+
+              final totalAmount = rentalData['totalAmount'] ?? 0.0;
+              final paymentReference = rentalData['paymentReference'] ?? 'N/A';
+
               Color statusColor;
-              if (status == 'approved') {
-                statusColor = Colors.green; // Approved status color
-              } else if (status == 'rejected') {
-                statusColor = Colors.red; // Rejected status color
+              if (status == 'active') {
+                statusColor = Colors.green;
+              } else if (status == 'completed') {
+                statusColor = Colors.blue;
+              } else if (status == 'cancelled') {
+                statusColor = Colors.red;
               } else {
-                statusColor = Colors.grey; // Default for other statuses
+                statusColor = Colors.grey;
               }
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 16),
                 elevation: 3,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -68,24 +96,27 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           backgroundColor: Colors.deepPurple.shade50,
-                          child: const Icon(Icons.apartment, color: Colors.deepPurple),
+                          child: const Icon(Icons.home,
+                              color: Colors.deepPurple),
                         ),
                         title: Text(
-                          data['apartmentName'] ?? 'Unknown Apartment',
+                          apartmentName,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.deepPurple,
                           ),
                         ),
                         subtitle: Text(
-                          'Submitted: ${(data['submittedAt'] != null) ? (data['submittedAt'] as Timestamp).toDate().toLocal().toString().split('.')[0] : 'Unknown'}',
-                          style: TextStyle(fontSize: 13, color: Colors.deepPurple.shade300),
+                          'Rented on: ${DateFormat('MMM d, yyyy').format(createdAt)}',
+                          style:
+                              TextStyle(color: Colors.deepPurple.shade300),
                         ),
                         trailing: Chip(
                           label: Text(
                             status.isNotEmpty
-                                ? status[0].toUpperCase() + status.substring(1)
+                                ? status[0].toUpperCase() +
+                                    status.substring(1)
                                 : '',
                             style: const TextStyle(color: Colors.white),
                           ),
@@ -93,41 +124,17 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      if (status == 'approved')
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => RentNowPage(
-                                    apartmentId: data['apartmentId'],
-                                    apartmentName: data['apartmentName'],
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.payment, color: Colors.white),
-                            label: const Text(
-                              "Rent Now",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 2,
-                            ),
-                          ),
-                        ),
+                      if (startDate != null)
+                        Text(
+                            'Start Date: ${DateFormat('MMM d, yyyy').format(startDate)}'),
+                      if (endDate != null)
+                        Text(
+                            'End Date: ${DateFormat('MMM d, yyyy').format(endDate)}'),
+                      const SizedBox(height: 8),
+                      Text(
+                          'Total Paid: \$${totalAmount.toStringAsFixed(2)}'),
+                      const SizedBox(height: 8),
+                      Text('Payment Reference: $paymentReference'),
                     ],
                   ),
                 ),

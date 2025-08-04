@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:frontend/admin_pages/AdminApprovePage.dart';
 import 'package:frontend/admin_pages/add_apartment.dart';
 import 'package:frontend/admin_pages/admin_apartment_view.dart';
+import 'package:frontend/admin_pages/approveVisitor.dart';
 import 'package:frontend/admin_pages/material_approval_page.dart';
 import 'package:frontend/admin_pages/post_notice_page.dart';
 import 'package:frontend/login_screen.dart';
@@ -352,6 +353,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _buildSidebarItem(Icons.notifications_active, 'Send Notice', const PostNoticePage()),
                 const Divider(height: 20, thickness: 0.5, indent: 20, endIndent: 20),
                 _buildSidebarItem(Icons.analytics_outlined, 'Report', const RentalReportWidget()),
+                 _buildSidebarItem(Icons.analytics_outlined, 'approve Visitor', const AdminVisitorsApprovalPage()),
                 const Spacer(),
                 const Divider(height: 20, thickness: 0.5),
                 _buildSidebarItem(Icons.logout, 'Logout', LoginScreen(), isLogout: true),
@@ -406,9 +408,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+
   Widget _buildRequestsButton() {
     return IconButton(
-      icon: const Icon(Icons.request_page, color: Colors.deepPurple),
+      icon: const Icon(Icons.mark_as_unread_sharp, color: Colors.deepPurple),
       onPressed: () {
         Navigator.push(
           context,
