@@ -33,6 +33,8 @@ class _RentNowPageState extends State<RentNowPage> {
   bool _isProcessing = false;
   bool _isLoading = true;
 
+  static const int minRentalDays = 30;
+
   @override
   void initState() {
     super.initState();
@@ -52,47 +54,91 @@ class _RentNowPageState extends State<RentNowPage> {
           _isLoading = false;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Apartment not found')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Apartment not found')));
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       Navigator.pop(context);
     }
   }
 
   Future<void> _pickDate(BuildContext context, bool isStartDate) async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
-      firstDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        if (isStartDate) {
+    if (isStartDate) {
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: _startDate ?? DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      );
+      if (pickedDate != null) {
+        setState(() {
           _startDate = pickedDate;
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-            _endDate = null;
+          // reset end date if it's before new minimum (start + minRentalDays -1)
+          if (_endDate != null) {
+            final minEnd = _startDate!.add(
+              const Duration(days: minRentalDays - 1),
+            );
+            if (_endDate!.isBefore(minEnd)) {
+              _endDate = null;
+            }
           }
-        } else {
+          _calculateTotalPrice();
+        });
+      }
+    } else {
+      if (_startDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Select start date first')),
+        );
+        return;
+      }
+      final minEndDate = _startDate!.add(
+        const Duration(days: minRentalDays - 1),
+      );
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: _endDate != null && _endDate!.isAfter(minEndDate)
+            ? _endDate!
+            : minEndDate,
+        firstDate: minEndDate,
+        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      );
+      if (pickedDate != null) {
+        setState(() {
           _endDate = pickedDate;
-        }
-        _calculateTotalPrice();
-      });
+          _calculateTotalPrice();
+        });
+      }
     }
+  }
+
+  int _calculateRentalMonths(DateTime start, DateTime end) {
+    int yearDiff = end.year - start.year;
+    int monthDiff = end.month - start.month;
+    int months = yearDiff * 12 + monthDiff;
+    if (end.day < start.day) months -= 1;
+    return max(1, months);
   }
 
   void _calculateTotalPrice() {
     if (_startDate != null && _endDate != null && _rentPrice != null) {
       final days = _endDate!.difference(_startDate!).inDays + 1;
+      if (days < minRentalDays) {
+        // Do not calculate until minimum satisfied
+        setState(() {
+          _totalPrice = null;
+          _paymentAmountController.clear();
+        });
+        return;
+      }
+      final months = _calculateRentalMonths(_startDate!, _endDate!);
       setState(() {
-        _totalPrice = _rentPrice! * days;
+        _totalPrice = _rentPrice! * months;
         _paymentAmountController.text = _totalPrice!.toStringAsFixed(2);
       });
     } else {
@@ -113,9 +159,25 @@ class _RentNowPageState extends State<RentNowPage> {
       return;
     }
 
+    final days = _endDate!.difference(_startDate!).inDays + 1;
+    if (days < minRentalDays) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rental must be at least 30 days')),
+      );
+      return;
+    }
+
     if (_endDate!.isBefore(_startDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End date cannot be before start date')),
+      );
+      return;
+    }
+
+    final rentalMonths = _calculateRentalMonths(_startDate!, _endDate!);
+    if (rentalMonths < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Calculated rental months invalid')),
       );
       return;
     }
@@ -128,10 +190,8 @@ class _RentNowPageState extends State<RentNowPage> {
         throw Exception('User not authenticated');
       }
 
-      final rentalDays = _endDate!.difference(_startDate!).inDays + 1;
       final refId = 'REF-${DateTime.now().millisecondsSinceEpoch}';
 
-      // ✅ Make Waafi API Payment Call
       final paymentResponse = await Payment.paymentProcessing(
         phoneNumber: _paymentNumberController.text.trim(),
         amount: _totalPrice!.toStringAsFixed(2),
@@ -145,11 +205,14 @@ class _RentNowPageState extends State<RentNowPage> {
 
       final invoiceId = paymentResponse['invoiceRef'];
 
-      // ✅ Save rental & payment info in Firestore
       final batch = FirebaseFirestore.instance.batch();
       final rentalRef = FirebaseFirestore.instance.collection('rentals').doc();
-      final paymentRef = FirebaseFirestore.instance.collection('payments').doc();
-      final apartmentRef = FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId);
+      final paymentRef = FirebaseFirestore.instance
+          .collection('payments')
+          .doc();
+      final apartmentRef = FirebaseFirestore.instance
+          .collection('apartments')
+          .doc(widget.apartmentId);
 
       final rentalData = {
         'apartmentId': widget.apartmentId,
@@ -161,7 +224,7 @@ class _RentNowPageState extends State<RentNowPage> {
         'endDate': Timestamp.fromDate(_endDate!),
         'rentPrice': _rentPrice,
         'totalAmount': _totalPrice,
-        'rentalDays': rentalDays,
+        'rentalMonths': rentalMonths,
         'paymentMethod': 'Mobile Money',
         'paymentNumber': _paymentNumberController.text.trim(),
         'paymentReference': invoiceId,
@@ -209,9 +272,7 @@ class _RentNowPageState extends State<RentNowPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -225,45 +286,74 @@ class _RentNowPageState extends State<RentNowPage> {
           key: _formKey,
           child: Column(
             children: [
-              Text(widget.apartmentName,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                widget.apartmentName,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 10),
-              Text('Rent: \$${_rentPrice?.toStringAsFixed(2)} per day'),
+              Text('Rent: \$${_rentPrice?.toStringAsFixed(2)} per month'),
+              if (_startDate != null && _endDate != null && _totalPrice != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Duration: ${_calculateRentalMonths(_startDate!, _endDate!)} month(s)',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
               const SizedBox(height: 16),
-
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter your name' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter your name' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter phone' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter phone' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _paymentNumberController,
-                decoration: const InputDecoration(labelText: 'Payment Number', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter payment number' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Number',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter payment number'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _paymentAmountController,
                 enabled: false,
-                decoration: const InputDecoration(labelText: 'Total Amount', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Total Amount',
+                  border: OutlineInputBorder(),
+                ),
               ),
-
               const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(_startDate == null
-                          ? 'Start Date'
-                          : DateFormat('yyyy-MM-dd').format(_startDate!)),
+                      label: Text(
+                        _startDate == null
+                            ? 'Start Date'
+                            : DateFormat('yyyy-MM-dd').format(_startDate!),
+                      ),
                       onPressed: () => _pickDate(context, true),
                     ),
                   ),
@@ -271,9 +361,11 @@ class _RentNowPageState extends State<RentNowPage> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(_endDate == null
-                          ? 'End Date'
-                          : DateFormat('yyyy-MM-dd').format(_endDate!)),
+                      label: Text(
+                        _endDate == null
+                            ? 'End Date'
+                            : DateFormat('yyyy-MM-dd').format(_endDate!),
+                      ),
                       onPressed: _startDate == null
                           ? null
                           : () => _pickDate(context, false),
@@ -281,7 +373,6 @@ class _RentNowPageState extends State<RentNowPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -293,7 +384,10 @@ class _RentNowPageState extends State<RentNowPage> {
                   ),
                   child: _isProcessing
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('CONFIRM PAYMENT'),
+                      : const Text(
+                          'CONFIRM PAYMENT',
+                          style: TextStyle(color: Colors.black),
+                        ),
                 ),
               ),
             ],
