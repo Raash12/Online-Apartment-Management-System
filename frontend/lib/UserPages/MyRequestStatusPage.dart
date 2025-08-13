@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:frontend/UserPages/Rent.dart';
 import 'package:intl/intl.dart';
 
 class UserIdentificationRequestsPage extends StatelessWidget {
@@ -12,11 +13,11 @@ class UserIdentificationRequestsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true, // ✅ Enables back arrow
+        automaticallyImplyLeading: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           color: Colors.white,
-          onPressed: () => Navigator.pop(context), // ✅ Go back
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text('My Identification Requests'),
         backgroundColor: Colors.deepPurple,
@@ -25,8 +26,8 @@ class UserIdentificationRequestsPage extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('identifications') // ✅ Use identifications
-            .where('userId', isEqualTo: currentUserId) // ✅ Current user’s requests
+            .collection('identifications')
+            .where('userId', isEqualTo: currentUserId)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -56,6 +57,7 @@ class UserIdentificationRequestsPage extends StatelessWidget {
 
               final apartmentName =
                   requestData['apartmentName'] ?? 'Unknown Apartment';
+              final apartmentId = requestData['apartmentId'] ?? '';
               final status =
                   (requestData['status'] ?? 'Pending').toString().toLowerCase();
 
@@ -64,14 +66,13 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                   ? submittedAtTimestamp.toDate()
                   : DateTime.now();
 
-              // ✅ Status color mapping
               Color statusColor;
               if (status == 'approved') {
                 statusColor = Colors.green;
               } else if (status == 'rejected') {
                 statusColor = Colors.red;
               } else {
-                statusColor = Colors.orange; // pending
+                statusColor = Colors.orange;
               }
 
               return Card(
@@ -117,6 +118,37 @@ class UserIdentificationRequestsPage extends StatelessWidget {
                       Text("ID Number: ${requestData['responsibleIdNumber'] ?? 'N/A'}"),
                       Text("Phone: ${requestData['responsiblePhone'] ?? 'N/A'}"),
                       Text("Workplace: ${requestData['responsibleWorkPlace'] ?? 'N/A'}"),
+                      const SizedBox(height: 12),
+                      
+                      // Show Rent Now button only if status is approved
+                      status == 'approved'
+                          ? Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.home_outlined),
+                                label: const Text('Rent Now'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: apartmentId.isEmpty
+                                    ? null
+                                    : () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => RentNowPage(
+                                              apartmentId: apartmentId,
+                                              apartmentName: apartmentName,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ],
                   ),
                 ),
