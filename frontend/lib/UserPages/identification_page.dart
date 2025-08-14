@@ -22,7 +22,6 @@ class _IdentificationPageState extends State<IdentificationPage> {
   String _responsibleName = '';
   String _responsibleIdNumber = '';
   String _responsiblePhone = '';
-  String _responsibleWorkPlace = '';
 
   bool _isSubmitting = false;
 
@@ -50,7 +49,6 @@ class _IdentificationPageState extends State<IdentificationPage> {
         'responsibleName': _responsibleName,
         'responsibleIdNumber': _responsibleIdNumber,
         'responsiblePhone': _responsiblePhone,
-        'responsibleWorkPlace': _responsibleWorkPlace,
         'status': 'Pending',
         'submittedAt': Timestamp.now(),
       });
@@ -167,7 +165,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
               // ID Number
               TextFormField(
                 decoration: InputDecoration(
-                  labelText: 'ID Number',
+                  labelText: 'Nira ID',
                   prefixIcon: const Icon(Icons.credit_card),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -192,19 +190,6 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 onSaved: (value) => _responsiblePhone = value ?? '',
               ),
               const SizedBox(height: 16),
-
-              // Workplace
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Workplace',
-                  prefixIcon: const Icon(Icons.work),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                onSaved: (value) => _responsibleWorkPlace = value ?? '',
-              ),
               const SizedBox(height: 32),
 
               // Submit Button

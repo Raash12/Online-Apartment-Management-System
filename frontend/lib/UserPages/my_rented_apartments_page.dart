@@ -16,18 +16,34 @@ class MyRentedApartmentsPage extends StatelessWidget {
           'My Rented Apartments',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.deepPurple,
         centerTitle: true,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            final popped = await Navigator.maybePop(context);
+            if (!popped) {
+              // Fallback to dashboard if nothing to pop (ensure route is registered)
+              // MaterialApp(routes: { '/userDashboard': (_) => const UserDashboard(), ... })
+              // Clears stack so user can't return here with system back
+              // ignore: use_build_context_synchronously
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/userDashboard',
+                (route) => false,
+              );
+            }
+          },
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE0F7FA), Color(0xFFB2EBF2)],
+            colors: [
+              Colors.deepPurple.shade50,
+              Colors.deepPurple.shade100,
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -40,20 +56,25 @@ class MyRentedApartmentsPage extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: Colors.teal),
+                child: CircularProgressIndicator(color: Colors.deepPurple),
               );
             }
 
             if (snapshot.hasError) {
               return const Center(
-                  child: Text('Something went wrong.',
-                      style: TextStyle(color: Colors.black54)));
+                child: Text(
+                  'Something went wrong.',
+                  style: TextStyle(color: Colors.black54),
+                ),
+              );
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return const Center(
-                child: Text('You have not rented any apartments.',
-                    style: TextStyle(color: Colors.black54)),
+                child: Text(
+                  'You have not rented any apartments.',
+                  style: TextStyle(color: Colors.black54),
+                ),
               );
             }
 
@@ -86,7 +107,11 @@ class MyRentedApartmentsPage extends StatelessWidget {
                     ? endDateTimestamp.toDate()
                     : null;
 
-                final totalAmount = rentalData['totalAmount'] ?? 0.0;
+                final totalAmountRaw = rentalData['totalAmount'] ?? 0.0;
+                final double totalAmount = totalAmountRaw is num
+                    ? totalAmountRaw.toDouble()
+                    : double.tryParse(totalAmountRaw.toString()) ?? 0.0;
+
                 final paymentReference =
                     rentalData['paymentReference'] ?? 'N/A';
 
@@ -116,8 +141,8 @@ class MyRentedApartmentsPage extends StatelessWidget {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
-                            backgroundColor: Colors.teal.shade100,
-                            child: const Icon(Icons.home, color: Colors.teal),
+                            backgroundColor: Colors.deepPurple.shade100,
+                            child: const Icon(Icons.home, color: Colors.deepPurple),
                           ),
                           title: Text(
                             apartmentName,
@@ -144,20 +169,27 @@ class MyRentedApartmentsPage extends StatelessWidget {
                         const SizedBox(height: 8),
                         if (startDate != null)
                           Text(
-                              'Start Date: ${DateFormat('MMM d, yyyy').format(startDate)}',
-                              style: const TextStyle(color: Colors.black87)),
+                            'Start Date: ${DateFormat('MMM d, yyyy').format(startDate)}',
+                            style: const TextStyle(color: Colors.black87),
+                          ),
                         if (endDate != null)
                           Text(
-                              'End Date: ${DateFormat('MMM d, yyyy').format(endDate)}',
-                              style: const TextStyle(color: Colors.black87)),
+                            'End Date: ${DateFormat('MMM d, yyyy').format(endDate)}',
+                            style: const TextStyle(color: Colors.black87),
+                          ),
                         const SizedBox(height: 8),
-                        Text('Total Paid: \$${totalAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.teal)),
+                        Text(
+                          'Total Paid: \$${totalAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('Payment Reference: $paymentReference',
-                            style: const TextStyle(color: Colors.black87)),
+                        Text(
+                          'Payment Reference: $paymentReference',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
                       ],
                     ),
                   ),

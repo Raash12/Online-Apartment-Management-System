@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +19,10 @@ class RentNowPage extends StatefulWidget {
 }
 
 class _RentNowPageState extends State<RentNowPage> {
+  // ===== Config =====
+  static const int _minRentalDays = 30; // Minimum rental length in days (inclusive)
+
+  // ===== Form & State =====
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -39,6 +42,7 @@ class _RentNowPageState extends State<RentNowPage> {
     _fetchApartmentDetails();
   }
 
+  // ===== Firestore load =====
   Future<void> _fetchApartmentDetails() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -55,46 +59,37 @@ class _RentNowPageState extends State<RentNowPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Apartment not found')),
         );
-        Navigator.pop(context);
+        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     }
   }
 
-  Future<void> _pickDate(BuildContext context, bool isStartDate) async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
-      firstDate: isStartDate ? DateTime.now() : (_startDate ?? DateTime.now()),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-    );
+  // ===== Helpers =====
+  DateTime _now() => DateTime.now();
 
-    if (pickedDate != null) {
-      setState(() {
-        if (isStartDate) {
-          _startDate = pickedDate;
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-            _endDate = null;
-          }
-        } else {
-          _endDate = pickedDate;
-        }
-        _calculateTotalPrice();
-      });
-    }
-  }
+  DateTime _minEndDateForStart(DateTime start) =>
+      start.add(Duration(days: _minRentalDays - 1));
 
   void _calculateTotalPrice() {
     if (_startDate != null && _endDate != null && _rentPrice != null) {
       final days = _endDate!.difference(_startDate!).inDays + 1;
-      setState(() {
-        _totalPrice = _rentPrice! * days;
-        _paymentAmountController.text = _totalPrice!.toStringAsFixed(2);
-      });
+      if (days >= _minRentalDays) {
+        setState(() {
+          _totalPrice = _rentPrice! * days;
+          _paymentAmountController.text = _totalPrice!.toStringAsFixed(2);
+        });
+      } else {
+        // Shouldn't happen due to picker constraints, but keep as a guard.
+        setState(() {
+          _totalPrice = null;
+          _paymentAmountController.clear();
+        });
+      }
     } else {
       setState(() {
         _totalPrice = null;
@@ -103,6 +98,49 @@ class _RentNowPageState extends State<RentNowPage> {
     }
   }
 
+  // ===== Date Picking with Min 30 Days =====
+  Future<void> _pickDate(BuildContext context, bool isStartDate) async {
+    if (isStartDate) {
+      final pickedStart = await showDatePicker(
+        context: context,
+        initialDate: _startDate ?? _now(),
+        firstDate: _now(),
+        lastDate: _now().add(const Duration(days: 365 * 5)),
+      );
+
+      if (pickedStart != null) {
+        setState(() {
+          _startDate = pickedStart;
+
+          // If end date is missing or now too early, snap it to min end date.
+          final minEnd = _minEndDateForStart(_startDate!);
+          if (_endDate == null || _endDate!.isBefore(minEnd)) {
+            _endDate = minEnd;
+          }
+        });
+        _calculateTotalPrice();
+      }
+    } else {
+      if (_startDate == null) return; // button is disabled anyway
+
+      final minEnd = _minEndDateForStart(_startDate!);
+      final pickedEnd = await showDatePicker(
+        context: context,
+        initialDate: (_endDate == null || _endDate!.isBefore(minEnd)) ? minEnd : _endDate!,
+        firstDate: minEnd, // Enforce minimum 30-day span
+        lastDate: _startDate!.add(const Duration(days: 365 * 5)),
+      );
+
+      if (pickedEnd != null) {
+        setState(() {
+          _endDate = pickedEnd;
+        });
+        _calculateTotalPrice();
+      }
+    }
+  }
+
+  // ===== Payment =====
   Future<void> _processPayment() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -120,6 +158,21 @@ class _RentNowPageState extends State<RentNowPage> {
       return;
     }
 
+    final rentalDays = _endDate!.difference(_startDate!).inDays + 1;
+    if (rentalDays < _minRentalDays) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Minimum rental is $_minRentalDays days.')),
+      );
+      return;
+    }
+
+    if (_totalPrice == null || _totalPrice == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Total amount is invalid')),
+      );
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {
@@ -128,10 +181,9 @@ class _RentNowPageState extends State<RentNowPage> {
         throw Exception('User not authenticated');
       }
 
-      final rentalDays = _endDate!.difference(_startDate!).inDays + 1;
       final refId = 'REF-${DateTime.now().millisecondsSinceEpoch}';
 
-      // ✅ Make Waafi API Payment Call
+      // ✅ Waafi API Payment Call
       final paymentResponse = await Payment.paymentProcessing(
         phoneNumber: _paymentNumberController.text.trim(),
         amount: _totalPrice!.toStringAsFixed(2),
@@ -139,8 +191,8 @@ class _RentNowPageState extends State<RentNowPage> {
         description: 'Apartment Rent Payment for ${widget.apartmentName}',
       );
 
-      if (!paymentResponse['success']) {
-        throw Exception(paymentResponse['message']);
+      if (!(paymentResponse['success'] == true)) {
+        throw Exception(paymentResponse['message'] ?? 'Payment failed');
       }
 
       final invoiceId = paymentResponse['invoiceRef'];
@@ -149,7 +201,9 @@ class _RentNowPageState extends State<RentNowPage> {
       final batch = FirebaseFirestore.instance.batch();
       final rentalRef = FirebaseFirestore.instance.collection('rentals').doc();
       final paymentRef = FirebaseFirestore.instance.collection('payments').doc();
-      final apartmentRef = FirebaseFirestore.instance.collection('apartments').doc(widget.apartmentId);
+      final apartmentRef = FirebaseFirestore.instance
+          .collection('apartments')
+          .doc(widget.apartmentId);
 
       final rentalData = {
         'apartmentId': widget.apartmentId,
@@ -186,6 +240,7 @@ class _RentNowPageState extends State<RentNowPage> {
 
       await batch.commit();
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Payment successful! Invoice: $invoiceId'),
@@ -195,6 +250,7 @@ class _RentNowPageState extends State<RentNowPage> {
 
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Payment failed: ${e.toString()}'),
@@ -202,10 +258,11 @@ class _RentNowPageState extends State<RentNowPage> {
         ),
       );
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
+  // ===== UI =====
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -225,34 +282,57 @@ class _RentNowPageState extends State<RentNowPage> {
           key: _formKey,
           child: Column(
             children: [
-              Text(widget.apartmentName,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                widget.apartmentName,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
               Text('Rent: \$${_rentPrice?.toStringAsFixed(2)} per day'),
+              const SizedBox(height: 8),
+              const Text(
+                'Minimum rental: 30 days',
+                style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter your name' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter your name' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter phone' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter phone' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _paymentNumberController,
-                decoration: const InputDecoration(labelText: 'Payment Number', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Enter payment number' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Number',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter payment number'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _paymentAmountController,
                 enabled: false,
-                decoration: const InputDecoration(labelText: 'Total Amount', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Total Amount',
+                  border: OutlineInputBorder(),
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -261,9 +341,11 @@ class _RentNowPageState extends State<RentNowPage> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(_startDate == null
-                          ? 'Start Date'
-                          : DateFormat('yyyy-MM-dd').format(_startDate!)),
+                      label: Text(
+                        _startDate == null
+                            ? 'Start Date'
+                            : DateFormat('yyyy-MM-dd').format(_startDate!),
+                      ),
                       onPressed: () => _pickDate(context, true),
                     ),
                   ),
@@ -271,12 +353,13 @@ class _RentNowPageState extends State<RentNowPage> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(_endDate == null
-                          ? 'End Date'
-                          : DateFormat('yyyy-MM-dd').format(_endDate!)),
-                      onPressed: _startDate == null
-                          ? null
-                          : () => _pickDate(context, false),
+                      label: Text(
+                        _endDate == null
+                            ? 'End Date'
+                            : DateFormat('yyyy-MM-dd').format(_endDate!),
+                      ),
+                      onPressed:
+                          _startDate == null ? null : () => _pickDate(context, false),
                     ),
                   ),
                 ],
